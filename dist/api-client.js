@@ -18,8 +18,15 @@ window.ProjectAPI = (() => {
   function localParts(iso,tz){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(iso));const v=Object.fromEntries(parts.map(p=>[p.type,p.value]));return {date:`${v.year}-${v.month}-${v.day}`,time:`${v.hour}:${v.minute}`};}
   // Resolve a local wall-clock time in its event timezone; reject nonexistent DST times.
   function utc(date,time,tz){const target=Date.parse(`${date}T${time}:00Z`);let value=target;for(let i=0;i<4;i++){const p=localParts(new Date(value).toISOString(),tz);const observed=Date.parse(`${p.date}T${p.time}:00Z`);const delta=target-observed;if(!delta)return new Date(value).toISOString();value+=delta;}throw Error('This local time does not exist in the selected timezone.');}
+  function projectPeople(project, members) {
+    const initials = name => name.trim().split(/\s+/).filter(Boolean).map(part => part[0]).join('').toUpperCase();
+    const manager = members.find(member => member.id === project.managerId);
+    const assigned = (project.memberIds || []).map(id => members.find(member => member.id === id)).filter(Boolean);
+    const name = manager?.name || 'Unassigned';
+    return { manager: name, lead: name, initials: manager ? initials(name) : '?', leadInitials: manager ? initials(name) : '?', memberInitials: assigned.slice(0, 4).map(member => initials(member.name)), memberCount: assigned.length };
+  }
   function toUI(data){const memberName=id=>data.members.find(m=>m.id===id)?.name||'Unassigned';return {
-    projects:data.projects.map(p=>({...p,manager:memberName(p.managerId),lead:memberName(p.managerId),initials:memberName(p.managerId).split(' ').map(n=>n[0]).join(''),date:formatDate(p.startDate),end:formatDate(p.endDate),team:0})),
+    projects:data.projects.map(p=>({...p,...projectPeople(p,data.members),date:formatDate(p.startDate),end:formatDate(p.endDate),team:0})),
     issues:data.issues.map(t=>({...t,assignee:memberName(t.assigneeId),color:({Todo:'blue','In Progress':'yellow',Review:'purple',Done:'green',Backlog:'gray'})[t.status]})),
     members:data.members.map(m=>({...m,email:m.email||'',avatar:m.avatarUrl||''})),teams:data.teams,
     notes:data.notes.map(n=>({...n,description:n.content,date:formatDate(n.createdAt.slice(0,10))})),
@@ -57,5 +64,5 @@ window.ProjectAPI = (() => {
     }}
   }
   async function file(id){const response=await fetch(`/api/documents/${id}/download`);if(!response.ok)throw Error('Could not download the document.');return response.blob();}
-  return {load,save,file,request,toUI,utc};
+  return {load,save,file,request,toUI,utc,projectPeople};
 })();
