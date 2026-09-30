@@ -14,6 +14,16 @@ async function safePath(root, key) {
   if (!actual.startsWith(base + path.sep)) throw fail(404, 'FILE_NOT_FOUND', 'File not found.');
   return actual;
 }
+async function imageType(file) {
+  const handle = await open(file, 'r');
+  try {
+    const bytes = Buffer.alloc(12); const {bytesRead} = await handle.read(bytes, 0, 12, 0);
+    if (bytesRead >= 8 && bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]))) return 'image/png';
+    if (bytesRead >= 3 && bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255) return 'image/jpeg';
+    if (bytesRead === 12 && bytes.toString('ascii',0,4) === 'RIFF' && bytes.toString('ascii',8,12) === 'WEBP') return 'image/webp';
+    return null;
+  } finally { await handle.close(); }
+}
 async function receive(app, request, avatar = false) {
   if (!request.isMultipart()) throw fail(415, 'MULTIPART_REQUIRED', 'Use multipart/form-data.');
   const fields = Object.create(null); let file;
@@ -28,16 +38,13 @@ async function receive(app, request, avatar = false) {
         await pipeline(part.file, createWriteStream(target, { flags: 'wx', mode: 0o600 }));
         if (part.file.truncated) throw fail(413, 'FILE_TOO_LARGE', 'File exceeds the upload limit.');
         if (file.size === 0) throw fail(400, 'EMPTY_FILE', 'Choose a non-empty file.');
-        if (avatar) {
-          const h = await open(target, 'r'); const bytes = Buffer.alloc(12); await h.read(bytes, 0, 12, 0); await h.close();
-          if (bytes.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10]))) file.mime = 'image/png';
-          else if (bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255) file.mime = 'image/jpeg';
-          else if (bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP') file.mime = 'image/webp';
-          else throw fail(400, 'INVALID_AVATAR', 'Avatar must be a PNG, JPEG or WebP image.');
-        } else if (/\.(txt|md)$/i.test(file.name)) file.mime = 'text/plain';
+        const detected = await imageType(target);
+        if (detected) file.mime = detected;
+        else if (avatar) throw fail(400, 'INVALID_AVATAR', 'Avatar must be a PNG, JPEG or WebP image.');
+        else if (/\.(txt|md)$/i.test(file.name)) file.mime = 'text/plain';
         else if (/\.pdf$/i.test(file.name)) file.mime = 'application/pdf';
       } else {
-        if (!['id', 'projectId', 'name', 'category', 'version'].includes(part.fieldname) || part.fieldname in fields || part.valueTruncated) throw fail(400, 'INVALID_FIELD', 'Invalid upload metadata.');
+        if (!['id', 'projectId', 'name', 'category', 'version', 'issueId'].includes(part.fieldname) || part.fieldname in fields || part.valueTruncated) throw fail(400, 'INVALID_FIELD', 'Invalid upload metadata.');
         fields[part.fieldname] = part.value;
       }
     }
@@ -56,13 +63,22 @@ export async function fileRoutes(app) {
       const data = await transaction(app.db, async c => {
         const old = replace ? await getRecord(c, 'documents', request.params.id, { lock: true }) : null;
         if (fields.id && !/^[A-Za-z0-9_-]{1,64}$/.test(fields.id)) throw fail(400, 'INVALID_ID', 'Invalid document ID.');
-        const meta = { ...(fields.id ? { id: fields.id } : {}), projectId: fields.projectId ?? old?.project_id, name: fields.name ?? old?.name, category: fields.category ?? old?.category ?? 'Other', kind: 'file', content: null, ...(fields.version ? { version: fields.version } : {}) };
+        const meta = { ...(fields.id ? { id: fields.id } : {}), projectId: fields.projectId ?? old?.project_id, issueId: fields.issueId ?? old?.issue_id ?? null, name: fields.name ?? old?.name, category: fields.category ?? old?.category ?? 'Other', kind: 'file', content: null, ...(fields.version ? { version: fields.version } : {}) };
         if (!/^[A-Za-z0-9_-]{1,64}$/.test(meta.projectId || '') || !meta.name?.trim() || meta.name.length > 160 || meta.category.length > 64) throw fail(400, 'VALIDATION_ERROR', 'Provide a valid projectId, name (1–160 characters), and category (up to 64 characters).');
+        if (meta.issueId && (!/^[A-Za-z0-9_-]{1,64}$/.test(meta.issueId) || !['image/png','image/jpeg','image/webp'].includes(file.mime))) throw fail(400, 'INVALID_TICKET_IMAGE', 'Choose a PNG, JPEG or WebP image for this ticket.');
         return saveRecord(c, request, 'documents', meta, { id: old?.id, file: { storage_key: file.key, original_name: file.name, mime_type: file.mime, size_bytes: file.size } });
       });
       return reply.code(replace ? 200 : 201).send({ data });
     } catch (error) { await unlink(file.target).catch(() => {}); throw error; }
   } });
+  app.get('/api/documents/:id/preview', { schema: { tags: ['documents'], params: paramsSchema } }, async (request, reply) => {
+    const row = await getRecord(app.db, 'documents', request.params.id);
+    if (row.kind !== 'file' || !row.storage_key) throw fail(415, 'NOT_AN_IMAGE', 'This document has no image preview.');
+    const file = await safePath(app.settings.uploadDir, row.storage_key);
+    const mime = await imageType(file);
+    if (!mime) throw fail(415, 'NOT_AN_IMAGE', 'Only PNG, JPEG and WebP images can be previewed.');
+    return reply.type(mime).header('content-disposition', 'inline').header('cache-control', 'private, no-store').send(createReadStream(file));
+  });
   app.get('/api/documents/:id/download', { schema: { tags: ['documents'], params: paramsSchema } }, async (request, reply) => {
     const row = await getRecord(app.db, 'documents', request.params.id);
     const filename = row.kind === 'file' ? row.original_name : row.name + '.txt';

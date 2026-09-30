@@ -51,6 +51,10 @@ export async function validateRecord(connection, type, values) {
       if (!values.startAt || !values.endAt || values.startDate || values.endDate || Date.parse(values.endAt) <= Date.parse(values.startAt)) throw fail(400, 'INVALID_DATES', 'Timed events require increasing startAt/endAt and null startDate/endDate.');
     }
   }
+  if (type === 'documents' && values.issueId) {
+    const [rows] = await connection.execute('SELECT project_id FROM issues WHERE id=? AND deleted_at IS NULL FOR SHARE', [values.issueId]);
+    if (!rows.length || rows[0].project_id !== values.projectId) throw fail(400, 'INVALID_REFERENCE', 'The ticket must belong to the selected project.');
+  }
   const refs = { projectId: 'projects', managerId: 'members', teamId: 'teams', assigneeId: 'members', ownerId: 'members' };
   for (const [key, table] of Object.entries(refs)) if (values[key]) {
     const [rows] = await connection.execute(`SELECT id FROM ${table} WHERE id=? AND deleted_at IS NULL FOR SHARE`, [values[key]]);
@@ -70,6 +74,11 @@ export async function saveRecord(connection, request, type, body, { id, replace 
   const [previous] = old ? await decorate(connection, type, [old]) : [{}];
   const values = { ...(old && !replace ? previous : spec.defaults), ...body };
   await validateRecord(connection, type, values);
+  if (type === 'issues' && old && old.project_id !== values.projectId) {
+    const [attachments] = await connection.execute('SELECT id FROM documents WHERE issue_id=? LIMIT 1 FOR UPDATE', [old.id]);
+    if (attachments.length) throw fail(409, 'ATTACHED_IMAGES', 'Tickets with attachments must stay in their current project.');
+  }
+
   if (type === 'documents') {
     if (values.kind === 'file' && !file && (!old || old.kind !== 'file')) throw fail(400, 'FILE_REQUIRED', 'Use the upload endpoint to create a file document.');
     if (values.kind === 'file') values.content = null;

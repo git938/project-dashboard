@@ -78,3 +78,17 @@ Task editors now include descriptions, type, priority and an explicit Unassigned
 The dashboard timeline and full Gantt use each assignee's current member photo, falling back to initials or `?` when unassigned. Change the photo under Teams & members. The project export includes active document files and embeds member photos; trashed documents are excluded. Use the database/uploads backup described above for a full recovery backup.
 
 Verification: API integration tests cover CRUD, references, file uploads, avatars, conflicts and bug filters; adapter tests cover ID-based assignment, dirty-field saves, conflict propagation and timeline photo/initials rendering. Browser checks cover reporting and completing a bug, reload persistence, status filtering, project membership creation and milestone creation. VPS deployment and authentication must still be checked by the deployer.
+
+## Ticket image attachments
+
+Run `npm run db:migrate --prefix api` and restart the service after updating. Migration `004_ticket_images` links documents to tickets through `issue_id` without changing existing documents.
+
+Open a ticket from Bug tracker, WBS, Kanban or the timeline. Choose an image under **Images**, then save. Attach one PNG/JPEG/WebP at a time (up to 25 MiB per file); a ticket can contain multiple images. Click a thumbnail for a larger preview and download the original from the preview. Images remain after reload and are also listed in Documents, where they can be moved to trash or restored. Existing project files can be previewed in Documents; they are not automatically assigned to a ticket.
+
+The upload uses `POST /api/documents/upload` with multipart `file`, `projectId`, `issueId`, and `name`. Read a ticket's attachments with `GET /api/documents?issueId=...`. The new `GET /api/documents/:id/preview` serves only PNG/JPEG/WebP signatures, with the same Nginx authentication as the rest of the site; SVG/HTML and other files are download-only. Ticket and document must belong to the same project. Tickets with attached documents cannot be moved between projects. File size limits use `MAX_UPLOAD_BYTES`.
+
+Ticket saving and image uploading are separate operations. If the ticket saves but an upload fails, the editor stays open with an error; retrying uploads to the saved ticket rather than creating a duplicate.
+
+### Dashboard navigation and timeline
+
+Bug Tracker has a permanent sidebar entry immediately after Notes. Its badge counts open bugs; the table includes completed bugs unless filtered. The dashboard timeline offers calendar Week (Monday–Sunday), Month and Quarter ranges, displays up to four active issues, clips bars to the chosen range, shows assignee avatars and marks today. Open Gantt shows all tasks.

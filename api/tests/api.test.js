@@ -61,6 +61,17 @@ test('CRUD, relationships, date checks, versions, files, soft delete, and origin
  assert.equal((await app.inject({method:'POST',url:'/api/documents/upload',...multipart({projectId:project.id,name:'Large'},Buffer.alloc(3000))})).statusCode,413);
  assert.equal((await app.inject({method:'PUT',url:`/api/members/${member.id}/avatar`,...multipart({},Buffer.from('<svg>bad</svg>'),'bad.png')})).statusCode,400);
  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1cAAAAASUVORK5CYII=','base64');
+ const imageUpload=await app.inject({method:'POST',url:'/api/documents/upload',...multipart({projectId:project.id,issueId:bug.id,name:'Bug screenshot'},png,'screenshot.png')});
+ assert.equal(imageUpload.statusCode,201,imageUpload.body);const screenshot=imageUpload.json().data;created.push(['documents',screenshot.id]);assert.equal(screenshot.issueId,bug.id);assert.equal(screenshot.mimeType,'image/png');
+ const preview=await call('GET',`/api/documents/${screenshot.id}/preview`);assert.equal(preview.statusCode,200);assert.match(preview.headers['content-type'],/^image\/png/);assert.deepEqual(preview.rawPayload,png);
+ assert.equal(json(await call('GET',`/api/documents?issueId=${bug.id}`)).pagination.total,1);
+ assert.equal((await call('GET',`/api/documents/${doc.id}/preview`)).statusCode,415);
+ assert.equal((await app.inject({method:'POST',url:'/api/documents/upload',...multipart({projectId:project.id,issueId:bug.id,name:'Fake image'},Buffer.from('<svg>not a raster image</svg>'),'fake.png')})).statusCode,400);
+ const otherProject=await create('projects',{name:'Other test project',startDate:'2026-09-01',endDate:'2026-10-01'});
+ assert.equal((await app.inject({method:'POST',url:'/api/documents/upload',...multipart({projectId:otherProject.id,issueId:bug.id,name:'Wrong project'},png,'wrong.png')})).statusCode,400);
+ assert.equal((await call('PATCH',`/api/issues/${bug.id}`,{projectId:otherProject.id})).statusCode,409);
+ assert.equal((await call('DELETE',`/api/documents/${screenshot.id}`)).statusCode,204);assert.equal((await call('GET',`/api/documents/${screenshot.id}/preview`)).statusCode,404);
+ assert.equal((await call('POST',`/api/documents/${screenshot.id}/restore`)).statusCode,200);assert.equal((await call('GET',`/api/documents/${screenshot.id}/preview`)).statusCode,200);
  const avatar=await app.inject({method:'PUT',url:`/api/members/${member.id}/avatar`,...multipart({},png,'avatar.png')});assert.equal(avatar.statusCode,200,avatar.body);assert.match(avatar.json().data.avatarUrl,/\/avatar/);
  assert.deepEqual((await call('GET',`/api/members/${member.id}/avatar`)).rawPayload,png);
  assert.equal((await call('DELETE',`/api/members/${member.id}/avatar`)).statusCode,204);

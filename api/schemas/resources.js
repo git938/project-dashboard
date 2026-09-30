@@ -17,7 +17,7 @@ export const resources = {
   notes: resource({ projectId: ref, ownerId: ref, name, content: text(500000), tag: text(64) }, ['name', 'content'], { projectId: null, ownerId: null, tag: '' }),
   teams: resource({ name, description: nullable(text(50000)), memberIds: ids }, ['name'], { description: null, memberIds: [] }, { memberIds: ['team_members', 'team_id', 'member_id', 'members'] }),
   members: resource({ name, role: text(), email: nullable({ type: 'string', format: 'email', maxLength: 254 }), active: bool, color }, ['name'], { role: '', email: null, active: true, color: '#e7e2f3' }),
-  documents: resource({ projectId: id, name, category: text(64), kind: enumeration(['note', 'file']), content: nullable(text(500000)) }, ['projectId', 'name', 'kind'], { category: 'Other', content: null }),
+  documents: resource({ projectId: id, issueId: ref, name, category: text(64), kind: enumeration(['note', 'file']), content: nullable(text(500000)) }, ['projectId', 'name', 'kind'], { issueId: null, category: 'Other', content: null }),
   events: resource({ projectId: id, title: name, type: enumeration(['Release', 'Meeting', 'Milestone', 'Other']), description: nullable(text(50000)), location: text(2048), allDay: bool, startAt: timestamp, endAt: timestamp, startDate: nullable(date), endDate: nullable(date), timezone: text(64), cancelled: bool, attendeeIds: ids }, ['projectId', 'title', 'type', 'allDay'], { description: null, location: '', startAt: null, endAt: null, startDate: null, endDate: null, timezone: 'Asia/Tokyo', cancelled: false, attendeeIds: [] }, { attendeeIds: ['event_attendees', 'event_id', 'member_id', 'members'] })
 };
 export const paramsSchema = { type: 'object', additionalProperties: false, required: ['id'], properties: { id } };
@@ -27,7 +27,7 @@ export function bodySchema(type, partial = false, create = false) {
 export function querySchema(type) {
   const props = { page: { type: 'integer', minimum: 1, maximum: 1000000, default: 1 }, pageSize: { type: 'integer', minimum: 1, maximum: 200, default: 50 }, q: text(160), sortOrder: { ...enumeration(['asc', 'desc']), default: 'desc' }, sortBy: { ...enumeration(type === 'activity' ? ['createdAt', 'id'] : ['createdAt', 'updatedAt', 'id', ...(type === 'events' ? ['title', 'startAt', 'startDate'] : ['name']), ...(type === 'issues' ? ['sortOrder'] : [])]), default: 'createdAt' } };
   const f = resources[type]?.fields || { projectId: id };
-  for (const key of ['projectId', 'status', 'assigneeId', 'teamId', 'type', 'category', 'kind', 'priority']) if (f[key]) props[key] = { ...f[key], type: 'string' };
+  for (const key of ['projectId', 'status', 'assigneeId', 'teamId', 'type', 'category', 'kind', 'priority', 'issueId']) if (f[key]) props[key] = { ...f[key], type: 'string' };
   if (type === 'documents') props.trashed = { type: 'boolean', default: false };
   if (type === 'events') Object.assign(props, { from: date, to: date, cancelled: bool });
   return { type: 'object', additionalProperties: false, properties: props };

@@ -44,7 +44,7 @@ window.ProjectAPI = (() => {
     case 'issues':return {kind:row.kind||'Task',priority:row.priority||'Medium',projectId:row.projectId,name:row.name,description:row.description||'',phase:row.phase,status:row.status,assigneeId:row.assigneeId===undefined?memberId(row.assignee):row.assigneeId,startDate:row.startDate,endDate:row.endDate,sortOrder:row.sortOrder||0};
     case 'milestones':return {projectId:row.projectId||state.projects.find(p=>p.name===row.project)?.id||state.projects[0]?.id,name:row.name,date:row.date,status:row.status||'Planned'};
     case 'notes':return {projectId:row.projectId||null,ownerId:row.ownerId||null,name:row.name,content:row.description??row.content??'',tag:row.tag||''};
-    case 'documents':return {projectId:row.projectId,name:row.name,category:row.category||'Other',kind:row.kind,content:row.kind==='note'?row.content||'':null};
+    case 'documents':return {projectId:row.projectId,issueId:row.issueId||null,name:row.name,category:row.category||'Other',kind:row.kind,content:row.kind==='note'?row.content||'':null};
     case 'events':{const timezone=row.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone;return {projectId:row.projectId,title:row.title,type:row.type,description:row.description||'',location:row.location||'',allDay:!!row.allDay,cancelled:!!row.cancelled,timezone,attendeeIds:row.attendees||[],startAt:row.allDay?null:utc(row.date,row.time,timezone),endAt:row.allDay?null:utc(row.endDate,row.endTime,timezone),startDate:row.allDay?row.date:null,endDate:row.allDay?row.endDate:null};}
   }}
   const json=(method,body)=>({method,body:JSON.stringify(body)});
@@ -53,7 +53,7 @@ window.ProjectAPI = (() => {
       let previous=cache[type].get(row.id);const body=payload(type,row,state);
       if(type==='documents'&&row.trashed){if(previous&&!previous.deletedAt){await request(`/api/documents/${row.id}?version=${previous.version}`,{method:'DELETE'});cache[type].set(row.id,{...previous,deletedAt:new Date().toISOString(),version:previous.version+1});}continue;}
       if(type==='documents'&&previous?.deletedAt){previous=(await request(`/api/documents/${row.id}/restore`,{method:'POST'})).data;cache[type].set(row.id,previous);}
-      if(type==='documents'&&fileEntry?.id===row.id){const form=new FormData();form.append('id',row.id);for(const key of ['projectId','name','category'])form.append(key,body[key]);if(previous)form.append('version',previous.version);form.append('file',fileEntry.file,fileEntry.file.name||row.fileName||'attachment');previous=(await request(previous?`/api/documents/${row.id}/file`:'/api/documents/upload',{method:previous?'PUT':'POST',body:form})).data;cache[type].set(row.id,previous);}
+      if(type==='documents'&&fileEntry?.id===row.id){const form=new FormData();form.append('id',row.id);for(const key of ['projectId','name','category'])form.append(key,body[key]);if(body.issueId)form.append('issueId',body.issueId);if(previous)form.append('version',previous.version);form.append('file',fileEntry.file,fileEntry.file.name||row.fileName||'attachment');previous=(await request(previous?`/api/documents/${row.id}/file`:'/api/documents/upload',{method:previous?'PUT':'POST',body:form})).data;cache[type].set(row.id,previous);}
       else if(!previous){previous=(await request(`/api/${type}`,json('POST',{id:row.id,...body}))).data;cache[type].set(row.id,previous);}
       else {const changes=Object.fromEntries(Object.entries(body).filter(([k,v])=>JSON.stringify(v)!==JSON.stringify((baseline[type].get(row.id)||previous)[k])));if(Object.keys(changes).length){previous=(await request(`/api/${type}/${row.id}`,json('PATCH',{...changes,version:previous.version}))).data;cache[type].set(row.id,previous);}}
       baseline[type].set(row.id,body);
@@ -64,6 +64,13 @@ window.ProjectAPI = (() => {
       }
     }}
   }
+  async function uploadTicketImage(issue, file) {
+    const form=new FormData();form.append('projectId',issue.projectId);form.append('issueId',issue.id);form.append('name',file.name.slice(0,160));form.append('category','Ticket image');form.append('file',file,file.name);
+    const row=(await request('/api/documents/upload',{method:'POST',body:form})).data;
+    cache.documents.set(row.id,row);
+    const ui={...row,fileName:row.originalName,mime:row.mimeType,size:Number(row.sizeBytes||0),updated:row.updatedAt,trashed:false};
+    baseline.documents.set(row.id,payload('documents',ui,{}));return ui;
+  }
   async function file(id){const response=await fetch(`/api/documents/${id}/download`);if(!response.ok)throw Error('Could not download the document.');return response.blob();}
-  return {load,save,file,request,toUI,utc,projectPeople,assigneeInitials};
+  return {load,save,file,request,uploadTicketImage,toUI,utc,projectPeople,assigneeInitials};
 })();

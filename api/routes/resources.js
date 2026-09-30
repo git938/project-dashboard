@@ -6,7 +6,7 @@ export async function resourceRoutes(app) {
     app.get(`/api/${type}`, { schema: { tags: [type], querystring: querySchema(type), response: { 200: responseSchema(type, true) } } }, async request => {
       const q = request.query, where = [], params = [];
       if (type !== 'activity') where.push(`deleted_at IS ${q.trashed ? 'NOT ' : ''}NULL`);
-      for (const key of ['projectId', 'status', 'assigneeId', 'teamId', 'type', 'category', 'cancelled', 'kind', 'priority']) if (q[key] !== undefined) { where.push(`${snake(key)}=?`); params.push(q[key]); }
+      for (const key of ['projectId', 'status', 'assigneeId', 'teamId', 'type', 'category', 'cancelled', 'kind', 'priority', 'issueId']) if (q[key] !== undefined) { where.push(`${snake(key)}=?`); params.push(q[key]); }
       if (q.q) { where.push(`${type === 'events' ? 'title' : type === 'activity' ? 'summary' : 'name'} LIKE ?`); params.push(`%${q.q}%`); }
       if (type === 'events') {
         if (q.from && q.to && q.from > q.to) throw fail(400, 'INVALID_DATES', 'from must not be after to.');

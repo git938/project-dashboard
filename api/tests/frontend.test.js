@@ -30,3 +30,8 @@ test('timeline avatar uses the current member photo, initials or unassigned fall
  assert.match(sandbox.taskAvatar({assigneeId:null}),/>\?<\/span>/);
  members[0].avatar='';members[0].name='Renamed Person';assert.match(sandbox.taskAvatar({assigneeId:'one'}),/>RP<\/span>/);
 });
+
+test('timeline calendar windows handle week/year boundaries and leap months',async()=>{
+ const code=await readFile(new URL('../../dist/planning-core.js',import.meta.url),'utf8'),sandbox={};vm.createContext(sandbox);vm.runInContext(code,sandbox);const p=sandbox.Planning;
+ for(const [range,date,start,end,days] of [['Week','2027-01-01','2026-12-28','2027-01-03',7],['Month','2028-02-15','2028-02-01','2028-02-29',29],['Quarter','2026-12-31','2026-10-01','2026-12-31',92]]){const b=p.timelineWindow(range,date);assert.equal(p.iso(b.start),start);assert.equal(p.iso(b.end),end);assert.equal(b.days,days)}
+});

@@ -5018,6 +5018,17 @@
           },
           {
             "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "in": "query",
+            "name": "issueId",
+            "required": false
+          },
+          {
+            "schema": {
               "type": "boolean",
               "default": false
             },
@@ -5049,6 +5060,13 @@
                             "minLength": 1,
                             "maxLength": 64,
                             "pattern": "^[A-Za-z0-9_-]+$"
+                          },
+                          "issueId": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 64,
+                            "pattern": "^[A-Za-z0-9_-]+$",
+                            "nullable": true
                           },
                           "name": {
                             "type": "string",
@@ -5181,6 +5199,13 @@
                     "maxLength": 64,
                     "pattern": "^[A-Za-z0-9_-]+$"
                   },
+                  "issueId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "pattern": "^[A-Za-z0-9_-]+$",
+                    "nullable": true
+                  },
                   "name": {
                     "type": "string",
                     "maxLength": 160,
@@ -5238,6 +5263,13 @@
                           "minLength": 1,
                           "maxLength": 64,
                           "pattern": "^[A-Za-z0-9_-]+$"
+                        },
+                        "issueId": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64,
+                          "pattern": "^[A-Za-z0-9_-]+$",
+                          "nullable": true
                         },
                         "name": {
                           "type": "string",
@@ -5366,6 +5398,13 @@
                           "maxLength": 64,
                           "pattern": "^[A-Za-z0-9_-]+$"
                         },
+                        "issueId": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64,
+                          "pattern": "^[A-Za-z0-9_-]+$",
+                          "nullable": true
+                        },
                         "name": {
                           "type": "string",
                           "maxLength": 160,
@@ -5477,6 +5516,13 @@
                     "maxLength": 64,
                     "pattern": "^[A-Za-z0-9_-]+$"
                   },
+                  "issueId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "pattern": "^[A-Za-z0-9_-]+$",
+                    "nullable": true
+                  },
                   "name": {
                     "type": "string",
                     "maxLength": 160,
@@ -5541,6 +5587,13 @@
                           "minLength": 1,
                           "maxLength": 64,
                           "pattern": "^[A-Za-z0-9_-]+$"
+                        },
+                        "issueId": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64,
+                          "pattern": "^[A-Za-z0-9_-]+$",
+                          "nullable": true
                         },
                         "name": {
                           "type": "string",
@@ -5649,6 +5702,13 @@
                     "maxLength": 64,
                     "pattern": "^[A-Za-z0-9_-]+$"
                   },
+                  "issueId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "pattern": "^[A-Za-z0-9_-]+$",
+                    "nullable": true
+                  },
                   "name": {
                     "type": "string",
                     "maxLength": 160,
@@ -5713,6 +5773,13 @@
                           "minLength": 1,
                           "maxLength": 64,
                           "pattern": "^[A-Za-z0-9_-]+$"
+                        },
+                        "issueId": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64,
+                          "pattern": "^[A-Za-z0-9_-]+$",
+                          "nullable": true
                         },
                         "name": {
                           "type": "string",
@@ -7156,6 +7223,31 @@
     },
     "/api/documents/{id}/file": {
       "put": {
+        "tags": [
+          "documents"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/documents/{id}/preview": {
+      "get": {
         "tags": [
           "documents"
         ],

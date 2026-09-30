@@ -32,5 +32,11 @@ try {
     await c.query("UPDATE issues SET kind='Bug',version=version+1 WHERE id LIKE 'bug-%' AND kind='Task'");
     await c.query("INSERT INTO schema_migrations(version) VALUES ('003_issue_tracking')");
   }
+  const [attachments] = await c.query("SELECT version FROM schema_migrations WHERE version='004_ticket_images'");
+  if (!attachments.length) {
+    const [columns] = await c.query("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=? AND TABLE_NAME='documents' AND COLUMN_NAME='issue_id'", [config.db.database]);
+    if (!columns.length) await c.query('ALTER TABLE documents ADD COLUMN issue_id VARCHAR(64) NULL, ADD CONSTRAINT documents_issue_fk FOREIGN KEY(issue_id) REFERENCES issues(id)');
+    await c.query("INSERT INTO schema_migrations(version) VALUES ('004_ticket_images')");
+  }
   console.log('Database migrations complete. No seed data was loaded.');
 } finally { await c.query("SELECT RELEASE_LOCK('project_dashboard_migrations')").catch(()=>{}); await c.end(); }
