@@ -24,6 +24,12 @@ test('CRUD, relationships, date checks, versions, files, soft delete, and origin
  const team=await create('teams',{name:'API test team',memberIds:[member.id]});
  assert.deepEqual(team.memberIds,[member.id]);
  const project=await create('projects',{name:'API test project',managerId:member.id,teamId:team.id,startDate:'2026-09-01',endDate:'2026-10-01',memberIds:[member.id]});
+ const bug=await create('issues',{projectId:project.id,name:'Regression bug',kind:'Bug',priority:'Critical',description:'Steps to reproduce',assigneeId:member.id,startDate:'2026-09-02',endDate:'2026-09-03'});
+ assert.equal(bug.kind,'Bug');assert.equal(bug.priority,'Critical');
+ const bugs=json(await call('GET',`/api/issues?projectId=${project.id}&kind=Bug&priority=Critical`));assert.equal(bugs.pagination.total,1);assert.equal(bugs.data[0].id,bug.id);
+ assert.equal((await call('PATCH',`/api/issues/${bug.id}`,{priority:'Unknown'})).statusCode,400);
+ assert.equal((await call('PATCH',`/api/issues/${bug.id}`,{status:'Review',version:bug.version})).statusCode,200);
+ assert.equal(json(await call('GET',`/api/issues/${bug.id}`)).data.status,'Review');
  const bad=await call('POST','/api/issues',{projectId:project.id,name:'Invalid date',startDate:'2026-10-02',endDate:'2026-10-01'});assert.equal(bad.statusCode,400);
  const issue=await create('issues',{projectId:project.id,name:'Test task',assigneeId:member.id,startDate:'2026-09-02',endDate:'2026-09-03'});
  assert.equal((await call('PATCH',`/api/issues/${issue.id}`,{status:'Done',version:issue.version})).statusCode,200);

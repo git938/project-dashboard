@@ -12,7 +12,7 @@ const enumeration = values => ({ type: 'string', enum: values });
 const resource = (fields, required, defaults, relations = {}) => ({ fields, required, defaults, relations });
 export const resources = {
   projects: resource({ name, description: nullable(text(50000)), status: enumeration(['Active', 'On hold', 'Completed', 'Archived']), managerId: ref, teamId: ref, startDate: date, endDate: date, color, memberIds: ids }, ['name', 'startDate', 'endDate'], { description: null, status: 'Active', managerId: null, teamId: null, color: '#aaa0ce', memberIds: [] }, { memberIds: ['project_members', 'project_id', 'member_id', 'members'] }),
-  issues: resource({ projectId: id, name, description: nullable(text(50000)), phase: enumeration(['Discovery', 'Design', 'Development', 'Launch']), status: enumeration(['Backlog', 'Todo', 'In Progress', 'Review', 'Done']), assigneeId: ref, startDate: date, endDate: date, sortOrder: { type: 'integer', minimum: 0, maximum: 1000000 } }, ['projectId', 'name', 'startDate', 'endDate'], { description: null, phase: 'Development', status: 'Todo', assigneeId: null, sortOrder: 0 }),
+  issues: resource({ projectId: id, name, kind: enumeration(['Task', 'Bug']), priority: enumeration(['Low', 'Medium', 'High', 'Critical']), description: nullable(text(50000)), phase: enumeration(['Discovery', 'Design', 'Development', 'Launch']), status: enumeration(['Backlog', 'Todo', 'In Progress', 'Review', 'Done']), assigneeId: ref, startDate: date, endDate: date, sortOrder: { type: 'integer', minimum: 0, maximum: 1000000 } }, ['projectId', 'name', 'startDate', 'endDate'], { kind: 'Task', priority: 'Medium', description: null, phase: 'Development', status: 'Todo', assigneeId: null, sortOrder: 0 }),
   milestones: resource({ projectId: id, name, date, status: enumeration(['Planned', 'Completed']) }, ['projectId', 'name', 'date'], { status: 'Planned' }),
   notes: resource({ projectId: ref, ownerId: ref, name, content: text(500000), tag: text(64) }, ['name', 'content'], { projectId: null, ownerId: null, tag: '' }),
   teams: resource({ name, description: nullable(text(50000)), memberIds: ids }, ['name'], { description: null, memberIds: [] }, { memberIds: ['team_members', 'team_id', 'member_id', 'members'] }),
@@ -27,7 +27,7 @@ export function bodySchema(type, partial = false, create = false) {
 export function querySchema(type) {
   const props = { page: { type: 'integer', minimum: 1, maximum: 1000000, default: 1 }, pageSize: { type: 'integer', minimum: 1, maximum: 200, default: 50 }, q: text(160), sortOrder: { ...enumeration(['asc', 'desc']), default: 'desc' }, sortBy: { ...enumeration(type === 'activity' ? ['createdAt', 'id'] : ['createdAt', 'updatedAt', 'id', ...(type === 'events' ? ['title', 'startAt', 'startDate'] : ['name']), ...(type === 'issues' ? ['sortOrder'] : [])]), default: 'createdAt' } };
   const f = resources[type]?.fields || { projectId: id };
-  for (const key of ['projectId', 'status', 'assigneeId', 'teamId', 'type', 'category']) if (f[key]) props[key] = { ...f[key], type: 'string' };
+  for (const key of ['projectId', 'status', 'assigneeId', 'teamId', 'type', 'category', 'kind', 'priority']) if (f[key]) props[key] = { ...f[key], type: 'string' };
   if (type === 'documents') props.trashed = { type: 'boolean', default: false };
   if (type === 'events') Object.assign(props, { from: date, to: date, cancelled: bool });
   return { type: 'object', additionalProperties: false, properties: props };

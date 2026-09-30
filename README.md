@@ -66,3 +66,15 @@ npm test --prefix api
 ```
 
 Integration tests require a migrated database, create unique temporary records and clean up only those records. They exercise CRUD, validation, references, optimistic concurrency, filtering, files, avatar signatures, soft deletion, and origin checks. Run against a development database. Readiness checks require both MySQL connectivity and applied migrations.
+
+## Bug tracker and workflow update
+
+After pulling this update, run `npm run db:migrate --prefix api` **before restarting the service**. Migration `003_issue_tracking` adds `kind` (Task/Bug) and `priority` (Low/Medium/High/Critical) to issues. Existing issue IDs beginning with `bug-` are classified as bugs; their status is preserved. Re-running the migration is safe.
+
+The sidebar Bug tracker shows title, project, priority, status, assignee, due date and workflow stage. Search, project/status/priority filters and due-date/priority/title sorting apply to the table and its summary. Resolved percentage is Done divided by filtered bugs, not an estimated engineering completion percentage. Report/edit uses the shared task editor; bug changes also appear in WBS, Kanban and Gantt. API example: `GET /api/issues?kind=Bug&priority=High`.
+
+Task editors now include descriptions, type, priority and an explicit Unassigned option. Assignees and project managers are saved by member ID. Projects support selecting project members. Milestone creation writes to the milestone tracker; notes and milestones can be edited by clicking their titles. Plan task opens the task editor; there is no separate sprint entity. Failed task saves retain the editor and restore the prior visible records. After a failed workspace save, reload before editing again to reconcile any individually committed records.
+
+The dashboard timeline and full Gantt use each assignee's current member photo, falling back to initials or `?` when unassigned. Change the photo under Teams & members. The project export includes active document files and embeds member photos; trashed documents are excluded. Use the database/uploads backup described above for a full recovery backup.
+
+Verification: API integration tests cover CRUD, references, file uploads, avatars, conflicts and bug filters; adapter tests cover ID-based assignment, dirty-field saves, conflict propagation and timeline photo/initials rendering. Browser checks cover reporting and completing a bug, reload persistence, status filtering, project membership creation and milestone creation. VPS deployment and authentication must still be checked by the deployer.

@@ -40,8 +40,8 @@ window.ProjectAPI = (() => {
   function payload(type,row,state){const memberId=name=>state.members.find(m=>m.name===name)?.id||null;switch(type){
     case 'members':return {name:row.name,role:row.role||'',email:row.email||null,active:row.active!==false,color:row.color||'#e7e2f3'};
     case 'teams':return {name:row.name,description:row.description||'',memberIds:row.memberIds||[]};
-    case 'projects':return {name:row.name,description:row.description||'',status:row.status||'Active',managerId:memberId(row.manager),teamId:row.teamId||null,startDate:row.startDate,endDate:row.endDate,color:row.color||'#aaa0ce'};
-    case 'issues':return {projectId:row.projectId,name:row.name,description:row.description||'',phase:row.phase,status:row.status,assigneeId:memberId(row.assignee),startDate:row.startDate,endDate:row.endDate,sortOrder:row.sortOrder||0};
+    case 'projects':return {name:row.name,description:row.description||'',status:row.status||'Active',managerId:row.managerId??memberId(row.manager),memberIds:row.memberIds||[],teamId:row.teamId||null,startDate:row.startDate,endDate:row.endDate,color:row.color||'#aaa0ce'};
+    case 'issues':return {kind:row.kind||'Task',priority:row.priority||'Medium',projectId:row.projectId,name:row.name,description:row.description||'',phase:row.phase,status:row.status,assigneeId:row.assigneeId===undefined?memberId(row.assignee):row.assigneeId,startDate:row.startDate,endDate:row.endDate,sortOrder:row.sortOrder||0};
     case 'milestones':return {projectId:row.projectId||state.projects.find(p=>p.name===row.project)?.id||state.projects[0]?.id,name:row.name,date:row.date,status:row.status||'Planned'};
     case 'notes':return {projectId:row.projectId||null,ownerId:row.ownerId||null,name:row.name,content:row.description??row.content??'',tag:row.tag||''};
     case 'documents':return {projectId:row.projectId,name:row.name,category:row.category||'Other',kind:row.kind,content:row.kind==='note'?row.content||'':null};

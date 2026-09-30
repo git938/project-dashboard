@@ -1112,6 +1112,32 @@
             "in": "query",
             "name": "assigneeId",
             "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Task",
+                "Bug"
+              ]
+            },
+            "in": "query",
+            "name": "kind",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Low",
+                "Medium",
+                "High",
+                "Critical"
+              ]
+            },
+            "in": "query",
+            "name": "priority",
+            "required": false
           }
         ],
         "responses": {
@@ -1143,6 +1169,22 @@
                             "maxLength": 160,
                             "minLength": 1,
                             "pattern": "\\S"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "Task",
+                              "Bug"
+                            ]
+                          },
+                          "priority": {
+                            "type": "string",
+                            "enum": [
+                              "Low",
+                              "Medium",
+                              "High",
+                              "Critical"
+                            ]
                           },
                           "description": {
                             "type": "string",
@@ -1272,6 +1314,22 @@
                     "minLength": 1,
                     "pattern": "\\S"
                   },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "Task",
+                      "Bug"
+                    ]
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": [
+                      "Low",
+                      "Medium",
+                      "High",
+                      "Critical"
+                    ]
+                  },
                   "description": {
                     "type": "string",
                     "maxLength": 50000,
@@ -1357,6 +1415,22 @@
                           "maxLength": 160,
                           "minLength": 1,
                           "pattern": "\\S"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "Task",
+                            "Bug"
+                          ]
+                        },
+                        "priority": {
+                          "type": "string",
+                          "enum": [
+                            "Low",
+                            "Medium",
+                            "High",
+                            "Critical"
+                          ]
                         },
                         "description": {
                           "type": "string",
@@ -1481,6 +1555,22 @@
                           "minLength": 1,
                           "pattern": "\\S"
                         },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "Task",
+                            "Bug"
+                          ]
+                        },
+                        "priority": {
+                          "type": "string",
+                          "enum": [
+                            "Low",
+                            "Medium",
+                            "High",
+                            "Critical"
+                          ]
+                        },
                         "description": {
                           "type": "string",
                           "maxLength": 50000,
@@ -1589,6 +1679,22 @@
                     "minLength": 1,
                     "pattern": "\\S"
                   },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "Task",
+                      "Bug"
+                    ]
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": [
+                      "Low",
+                      "Medium",
+                      "High",
+                      "Critical"
+                    ]
+                  },
                   "description": {
                     "type": "string",
                     "maxLength": 50000,
@@ -1681,6 +1787,22 @@
                           "maxLength": 160,
                           "minLength": 1,
                           "pattern": "\\S"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "Task",
+                            "Bug"
+                          ]
+                        },
+                        "priority": {
+                          "type": "string",
+                          "enum": [
+                            "Low",
+                            "Medium",
+                            "High",
+                            "Critical"
+                          ]
                         },
                         "description": {
                           "type": "string",
@@ -1785,6 +1907,22 @@
                     "minLength": 1,
                     "pattern": "\\S"
                   },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "Task",
+                      "Bug"
+                    ]
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": [
+                      "Low",
+                      "Medium",
+                      "High",
+                      "Critical"
+                    ]
+                  },
                   "description": {
                     "type": "string",
                     "maxLength": 50000,
@@ -1877,6 +2015,22 @@
                           "maxLength": 160,
                           "minLength": 1,
                           "pattern": "\\S"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "Task",
+                            "Bug"
+                          ]
+                        },
+                        "priority": {
+                          "type": "string",
+                          "enum": [
+                            "Low",
+                            "Medium",
+                            "High",
+                            "Critical"
+                          ]
                         },
                         "description": {
                           "type": "string",
@@ -4848,6 +5002,18 @@
             },
             "in": "query",
             "name": "category",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "note",
+                "file"
+              ]
+            },
+            "in": "query",
+            "name": "kind",
             "required": false
           },
           {

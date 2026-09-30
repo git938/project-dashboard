@@ -23,5 +23,14 @@ try {
     }
     await c.query("INSERT IGNORE INTO schema_migrations(version) VALUES ('002_record_versions')");
   }
+  const [bugMigration] = await c.query("SELECT version FROM schema_migrations WHERE version='003_issue_tracking'");
+  if (!bugMigration.length) {
+    for (const [name, definition] of [['kind', "ENUM('Task','Bug') NOT NULL DEFAULT 'Task'"], ['priority', "ENUM('Low','Medium','High','Critical') NOT NULL DEFAULT 'Medium'"]]) {
+      const [columns] = await c.query('SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=? AND TABLE_NAME=? AND COLUMN_NAME=?', [config.db.database, 'issues', name]);
+      if (!columns.length) await c.query(`ALTER TABLE issues ADD COLUMN ${name} ${definition}`);
+    }
+    await c.query("UPDATE issues SET kind='Bug',version=version+1 WHERE id LIKE 'bug-%' AND kind='Task'");
+    await c.query("INSERT INTO schema_migrations(version) VALUES ('003_issue_tracking')");
+  }
   console.log('Database migrations complete. No seed data was loaded.');
 } finally { await c.query("SELECT RELEASE_LOCK('project_dashboard_migrations')").catch(()=>{}); await c.end(); }
