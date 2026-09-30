@@ -4,7 +4,7 @@
  let {members,teams,documents,events}=window.Bootstrap;
  const home=[...$('main').children].filter(e=>e.tagName!=='FOOTER');const page=document.createElement('section');page.id='workspace-page';page.className='hidden';$('main').insertBefore(page,$('footer'));
  const nav=document.querySelector('nav');nav.insertAdjacentHTML('beforeend','<p class="nav-label">ORGANIZATION</p><button data-work="documents">▤ <span>Documents</span></button><button data-work="teams">♧ <span>Teams & members</span></button><button data-work="calendar">▦ <span>Event calendar</span></button>');
- const status=document.createElement('span');status.id='save-status';status.textContent='Connecting to database…';$('footer').lastElementChild.replaceWith(status);
+ const status=$('#save-status');
  const modal=document.createElement('dialog');modal.id='workspace-editor';modal.setAttribute('aria-labelledby','work-editor-title');document.body.append(modal);let submitAction;
  const options=(items,value,label='name')=>items.map(x=>`<option value="${esc(x.id)}"${x.id===value?' selected':''}>${esc(x[label])}</option>`).join('');
  const projectOptions=id=>'<option value="all">All projects</option>'+options(projects,id);
@@ -17,7 +17,16 @@
  function persist(fileEntry){status.textContent='Saving to database…';let data=structuredClone(snapshot());saveQueue=saveQueue.catch(()=>{}).then(()=>ProjectAPI.save(data,fileEntry));saveQueue.then(()=>{status.textContent='Saved to MySQL'},error=>{status.textContent='Save failed · reload before continuing';toast(error.message)});return saveQueue;}
  ready=true;status.textContent='Connected to MySQL';
  const renderBefore=render;render=function(){renderBefore();updateTeamSummary();};
- function updateTeamSummary(){let panel=$('.team-line');if(panel){panel.innerHTML=`<div class="member-stack">${activeMembers().slice(0,5).map(avatar).join('')}</div><button class="text-btn" id="manage-team">Manage teams</button>`;panel.previousElementSibling.querySelector('.count').textContent=activeMembers().length+' members';$('#manage-team').onclick=()=>open('teams')}$('.planning-help').textContent='Shared tasks across all views · Saved to MySQL';$('.demo-label').textContent='PROJECT WORKSPACE';$('.toolbar-right .avatars').innerHTML=activeMembers().slice(0,3).map(avatar).join('')}
+ function updateTeamSummary(){
+  const list=activeMembers();
+  const stack=limit=>list.slice(0,limit).map(avatar).join('')+(list.length>limit?`<span class="member-avatar initials" aria-label="${list.length-limit} more members">+${list.length-limit}</span>`:'');
+  $('#team-avatars').innerHTML=stack(5);
+  $('#toolbar-avatars').innerHTML=stack(3);
+  $('#team-member-count').textContent=`${list.length} ${list.length===1?'member':'members'}`;
+  $('#manage-team').onclick=()=>open('teams');
+  $('.planning-help').textContent='Shared tasks across all views';
+ }
+
  function open(next){view=next;PlanningUI.show('overview');home.forEach(el=>el.classList.add('hidden'));page.classList.remove('hidden');document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('selected',next==='projects'?b.dataset.view==='projects':b.dataset.work===next));$('#crumb').textContent={projects:'Projects',documents:'Documents',teams:'Teams & members',calendar:'Event calendar'}[next];$('#search').closest('.search').classList.add('hidden');draw();if(innerWidth<980)document.body.classList.remove('collapsed');window.scrollTo({top:0,behavior:'instant'})}
  window.addEventListener('planning:navigate',()=>page.classList.add('hidden'));
  document.querySelector('[data-view="projects"]').onclick=()=>open('projects');document.querySelectorAll('[data-work]').forEach(b=>b.onclick=()=>open(b.dataset.work));

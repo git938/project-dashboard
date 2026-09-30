@@ -22,11 +22,11 @@
  function setStatus(id,status){let t=issues.find(t=>t.id===id);if(!t||!P.statuses.includes(status)||t.status===status)return;t.status=status;changed(t.id+' moved to '+status)}
  function syncOverview(){
  $('#stats').innerHTML=[['Total Projects',projects.length,'Projects in this workspace'],['Total Tasks',issues.length,'Shared planning tasks'],['In Progress',issues.filter(t=>t.status==='In Progress').length,'Tasks underway'],['Completed',issues.filter(t=>t.status==='Done').length,'Tasks delivered']].map(([label,value,desc])=>`<article class="stat"><div class="stat-label">${label}</div><strong>${value}</strong><small>${desc}</small></article>`).join('');
- document.querySelector('[data-view="projects"] small').textContent=projects.length;document.querySelector('[data-view="issues"] small').textContent=issues.length;
+ $('#nav-project-count').textContent=projects.length;$('#nav-issue-count').textContent=issues.length;
  let counts=P.statuses.map(s=>issues.filter(t=>t.status===s).length),palette=['#dadce2','#9ecddf','#e1c775','#b9a2d8','#98b5a4'],offset=0;
  let stops=counts.map((n,i)=>{let start=offset;offset+=n/(issues.length||1)*100;return `${palette[i]} ${start}% ${offset}%`});
- $('.donut').style.background=`conic-gradient(${stops.join(',')})`;$('.donut>span').innerHTML=`${issues.length}<small>Total issues</small>`;
- $('.legend').innerHTML=P.statuses.map((s,i)=>`<p><i class="dot ${P.colors[s]}"></i>${s}<b>${counts[i]}</b></p>`).join('');$('.status-chart').previousElementSibling.querySelector('.count').textContent=issues.length+' issues';
+ $('#issue-status-donut').style.background=issues.length?`conic-gradient(${stops.join(',')})`:'#e9e9ef';$('#issue-status-total').innerHTML=`${issues.length}<small>Total issues</small>`;
+ $('#issue-status-legend').innerHTML=P.statuses.map((s,i)=>`<p><i class="dot ${P.colors[s]}"></i>${s}<b>${counts[i]}</b></p>`).join('');$('#issue-status-count').textContent=issues.length+(issues.length===1?' issue':' issues');
  }
  const baseRender=render;render=function(){baseRender();syncOverview();if(view!=='overview')draw()};
  const originalCreate=openCreate;openCreate=function(t){if(t==='issue')openTask();else originalCreate(t)};
