@@ -58,7 +58,7 @@ window.ProjectAPI = (() => {
       else {const changes=Object.fromEntries(Object.entries(body).filter(([k,v])=>JSON.stringify(v)!==JSON.stringify((baseline[type].get(row.id)||previous)[k])));if(Object.keys(changes).length){previous=(await request(`/api/${type}/${row.id}`,json('PATCH',{...changes,version:previous.version}))).data;cache[type].set(row.id,previous);}}
       baseline[type].set(row.id,body);
       if(type==='members'&&(row.avatar||'')!==(avatarSent.get(row.id)||'')){
-        if(row.avatar?.startsWith('data:image/')){const blob=await(await fetch(row.avatar)).blob();const form=new FormData();form.append('version',previous.version);form.append('file',blob,'avatar');previous=(await request(`/api/members/${row.id}/avatar`,{method:'PUT',body:form})).data;}
+        if(row.avatar?.startsWith('data:image/')){const match=/^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(row.avatar);if(!match)throw Error('Choose a valid PNG, JPEG or WebP avatar.');const bytes=Uint8Array.from(atob(match[2]),c=>c.charCodeAt(0));const blob=new Blob([bytes],{type:match[1]});const form=new FormData();form.append('version',previous.version);form.append('file',blob,'avatar');previous=(await request(`/api/members/${row.id}/avatar`,{method:'PUT',body:form})).data;}
         else if(!row.avatar){await request(`/api/members/${row.id}/avatar`,{method:'DELETE'});previous=(await request(`/api/members/${row.id}`)).data;}
         cache[type].set(row.id,previous);avatarSent.set(row.id,row.avatar||'');
       }

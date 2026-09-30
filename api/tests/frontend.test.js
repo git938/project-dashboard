@@ -35,3 +35,14 @@ test('timeline calendar windows handle week/year boundaries and leap months',asy
  const code=await readFile(new URL('../../dist/planning-core.js',import.meta.url),'utf8'),sandbox={};vm.createContext(sandbox);vm.runInContext(code,sandbox);const p=sandbox.Planning;
  for(const [range,date,start,end,days] of [['Week','2027-01-01','2026-12-28','2027-01-03',7],['Month','2028-02-15','2028-02-01','2028-02-29',29],['Quarter','2026-12-31','2026-10-01','2026-12-31',92]]){const b=p.timelineWindow(range,date);assert.equal(p.iso(b.start),start);assert.equal(p.iso(b.end),end);assert.equal(b.days,days)}
 });
+
+test('avatar save decodes locally without a CSP-blocked data URL fetch and retains upload version',async()=>{
+ const records={members:[{id:'m',name:'Avatar test',role:'Developer',email:null,active:true,color:'#eeeeee',version:1}],teams:[],projects:[],issues:[],notes:[],milestones:[],documents:[],events:[],activity:[]};let uploads=0;
+ const sandbox={window:{},Intl,Date,Map,FormData,Blob,Uint8Array,atob,fetch:async(url,options={})=>{
+  assert.ok(url.startsWith('/api/'),'Only same-origin API requests are allowed');
+  if(options.method==='PUT'){uploads++;assert.equal(options.body.get('version'),'1');const file=options.body.get('file');assert.equal(file.type,'image/png');assert.deepEqual([...new Uint8Array(await file.arrayBuffer())],[137,80,78,71]);return {ok:true,status:200,json:async()=>({data:{...records.members[0],version:2,avatarUrl:'/api/members/m/avatar?v=2'}})}}
+  if(options.method==='PATCH'){assert.equal(JSON.parse(options.body).version,2);return {ok:true,status:200,json:async()=>({data:{...records.members[0],version:3}})}}
+  const type=url.split('/')[2].split('?')[0];return {ok:true,status:200,json:async()=>({data:records[type],pagination:{total:records[type].length}})};
+ }};
+ vm.createContext(sandbox);vm.runInContext(source,sandbox);const client=sandbox.window.ProjectAPI,state=await client.load();state.members[0].avatar='data:image/png;base64,iVBORw==';await client.save(state);await client.save(state);assert.equal(uploads,1);state.members[0].role='Designer';await client.save(state);
+});
