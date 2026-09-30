@@ -1,1 +1,16 @@
 .DS_Store
+.openai/
+*.zip
+*.command
+
+# Local database, passwords and uploads
+.env
+.env.*
+!.env.example
+.local/
+uploads/
+*.log
+
+node_modules/
+coverage/
+.env.test

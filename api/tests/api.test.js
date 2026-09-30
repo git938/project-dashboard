@@ -1,0 +1,67 @@
+import { test, before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
+import { mkdtemp, rm } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { buildApp } from '../app.js';
+import { createPool } from '../db.js';
+import { config } from '../config.js';
+let app,pool,dir;const created=[];
+const json = response => response.json();
+async function call(method,url,payload,headers={}){return app.inject({method,url,payload,headers});}
+async function create(type,body){const r=await call('POST','/api/'+type,body);assert.equal(r.statusCode,201,r.body);created.push([type,r.json().data.id]);return r.json().data;}
+function multipart(fields,buffer,filename='fixture.txt'){const boundary='----test'+randomUUID();const chunks=[];for(const [k,v] of Object.entries(fields))chunks.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="${k}"\r\n\r\n${v}\r\n`));chunks.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: application/octet-stream\r\n\r\n`),buffer,Buffer.from(`\r\n--${boundary}--\r\n`));return {payload:Buffer.concat(chunks),headers:{'content-type':`multipart/form-data; boundary=${boundary}`}};}
+before(async()=>{pool=createPool();dir=await mkdtemp(path.join(os.tmpdir(),'dashboard-api-test-'));app=await buildApp({pool,logger:false,settings:{...config,uploadDir:dir,maxUpload:2048,maxAvatar:512}});await app.ready();});
+after(async()=>{for(const [type,id] of created.reverse()){
+ await pool.execute('DELETE FROM activity WHERE entity_id=?',[id]);
+ for(const [table,column] of [['event_attendees','event_id'],['team_members','team_id'],['project_members','project_id']]) if((type==='events'&&table==='event_attendees')||(type==='teams'&&table==='team_members')||(type==='projects'&&table==='project_members'))await pool.execute(`DELETE FROM ${table} WHERE ${column}=?`,[id]);
+ await pool.execute(`DELETE FROM ${type} WHERE id=?`,[id]);
+}await app?.close();await pool?.end();if(dir)await rm(dir,{recursive:true,force:true});});
+test('CRUD, relationships, date checks, versions, files, soft delete, and origin guard',async()=>{
+ assert.equal((await call('GET','/api/ready')).statusCode,200);
+ const member=await create('members',{name:'API test member',email:'test@example.test'});
+ const team=await create('teams',{name:'API test team',memberIds:[member.id]});
+ assert.deepEqual(team.memberIds,[member.id]);
+ const project=await create('projects',{name:'API test project',managerId:member.id,teamId:team.id,startDate:'2026-09-01',endDate:'2026-10-01',memberIds:[member.id]});
+ const bad=await call('POST','/api/issues',{projectId:project.id,name:'Invalid date',startDate:'2026-10-02',endDate:'2026-10-01'});assert.equal(bad.statusCode,400);
+ const issue=await create('issues',{projectId:project.id,name:'Test task',assigneeId:member.id,startDate:'2026-09-02',endDate:'2026-09-03'});
+ assert.equal((await call('PATCH',`/api/issues/${issue.id}`,{status:'Done',version:issue.version})).statusCode,200);
+ assert.equal((await call('PATCH',`/api/issues/${issue.id}`,{status:'Todo',version:issue.version})).statusCode,409);
+ const filtered=json(await call('GET',`/api/issues?projectId=${project.id}&status=Done&pageSize=1&sortBy=updatedAt`));assert.equal(filtered.pagination.total,1);assert.equal(filtered.data[0].id,issue.id);
+ assert.equal((await call('GET','/api/issues?sortBy=name%3BDROP%20TABLE%20issues')).statusCode,400);
+ assert.equal((await call('PATCH',`/api/issues/${issue.id}`,{unknown:'ignored?'})).statusCode,400);
+ assert.equal((await call('PATCH',`/api/issues/${issue.id}`,{status:'Todo'},{origin:'https://evil.example',host:'localhost:3100'})).statusCode,403);
+ assert.equal((await call('PATCH',`/api/issues/${issue.id}`,{status:'Todo'},{origin:'http://localhost:3100',host:'localhost:3100'})).statusCode,200);
+ assert.equal((await call('PATCH',`/api/teams/${team.id}`,{name:'Should roll back',memberIds:[randomUUID()]})).statusCode,400);
+ assert.equal(json(await call('GET',`/api/teams/${team.id}`)).data.name,'API test team');
+ assert.equal((await call('DELETE',`/api/projects/${project.id}`)).statusCode,409);
+ const milestone=await create('milestones',{name:'Test milestone',projectId:project.id,date:'2026-09-20'});
+ const note=await create('notes',{name:'Test note',projectId:project.id,content:'Hello <script> is text'});
+ assert.equal((await call('PUT',`/api/notes/${note.id}`,{name:'Replaced',content:'Replacement'})).statusCode,200);
+ assert.equal(json(await call('GET',`/api/notes/${note.id}`)).data.projectId,null);
+ const event=await create('events',{title:'Test meeting',type:'Meeting',projectId:project.id,allDay:false,startAt:'2026-09-29T01:00:00Z',endAt:'2026-09-29T02:00:00Z',attendeeIds:[member.id],timezone:'Asia/Tokyo'});
+ assert.deepEqual(event.attendeeIds,[member.id]);assert.equal(event.startAt,'2026-09-29T01:00:00.000Z');
+ assert.equal((await call('PATCH',`/api/events/${event.id}`,{endAt:'2026-09-28T01:00:00Z'})).statusCode,400);
+ assert.equal(json(await call('GET',`/api/events?projectId=${project.id}&from=2026-09-29&to=2026-09-29`)).pagination.total,1);
+ await create('events',{title:'All day test',type:'Release',projectId:project.id,allDay:true,startDate:'2026-09-30',endDate:'2026-10-01'});
+ assert.equal(json(await call('GET',`/api/events?projectId=${project.id}&from=2026-10-01&to=2026-10-01`)).pagination.total,1);
+ const content=Buffer.from('Test attachment\n中文 UTF-8\n');const upload=multipart({projectId:project.id,name:'Test file'},content);
+ const uploaded=await app.inject({method:'POST',url:'/api/documents/upload',...upload});assert.equal(uploaded.statusCode,201,uploaded.body);const doc=uploaded.json().data;created.push(['documents',doc.id]);
+ assert.equal('storageKey' in doc,false);const downloaded=await call('GET',`/api/documents/${doc.id}/download`);assert.equal(downloaded.statusCode,200);assert.deepEqual(downloaded.rawPayload,content);
+ assert.equal((await call('DELETE',`/api/documents/${doc.id}`)).statusCode,204);assert.equal((await call('GET',`/api/documents/${doc.id}/download`)).statusCode,404);
+ assert.equal(json(await call('GET',`/api/documents?projectId=${project.id}&trashed=true`)).pagination.total,1);
+ assert.equal((await call('POST',`/api/documents/${doc.id}/restore`)).statusCode,200);
+ assert.equal((await app.inject({method:'POST',url:'/api/documents/upload',...multipart({projectId:project.id,name:'Large'},Buffer.alloc(3000))})).statusCode,413);
+ assert.equal((await app.inject({method:'PUT',url:`/api/members/${member.id}/avatar`,...multipart({},Buffer.from('<svg>bad</svg>'),'bad.png')})).statusCode,400);
+ const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1cAAAAASUVORK5CYII=','base64');
+ const avatar=await app.inject({method:'PUT',url:`/api/members/${member.id}/avatar`,...multipart({},png,'avatar.png')});assert.equal(avatar.statusCode,200,avatar.body);assert.match(avatar.json().data.avatarUrl,/\/avatar/);
+ assert.deepEqual((await call('GET',`/api/members/${member.id}/avatar`)).rawPayload,png);
+ assert.equal((await call('DELETE',`/api/members/${member.id}/avatar`)).statusCode,204);
+ assert.equal((await call('GET',`/api/members/${member.id}/avatar`)).statusCode,404);
+ const activity=json(await call('GET',`/api/activity?projectId=${project.id}`));assert(activity.pagination.total>0);
+ assert.equal((await call('GET','/.env')).statusCode,403);
+ assert.equal((await call('GET','/api/openapi.json')).statusCode,200);
+ assert.equal((await call('DELETE',`/api/milestones/${milestone.id}`)).statusCode,204);
+ assert.equal((await call('GET',`/api/milestones/${milestone.id}`)).statusCode,404);
+});

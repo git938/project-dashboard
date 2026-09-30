@@ -1,0 +1,17 @@
+Local MySQL verification: 8.0.16
+Counts:
+{
+  "projects": 4,
+  "issues": 24,
+  "teams": 3,
+  "members": 8,
+  "team_members": 9,
+  "project_members": 13,
+  "milestones": 6,
+  "notes": 5,
+  "documents": 4,
+  "events": 6,
+  "event_attendees": 12,
+  "activity": 4
+}
+Passed: application TCP connection; 127.0.0.1 binding; UTC timezone; seed rerun leaves counts unchanged; foreign key rejection; reversed issue/event date rejection; attachment size matches fixture.

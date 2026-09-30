@@ -1,0 +1,23 @@
+[Unit]
+Description=Project Dashboard API
+After=network.target
+
+[Service]
+Type=simple
+User=project-dashboard
+Group=project-dashboard
+WorkingDirectory=/opt/project-dashboard/api
+EnvironmentFile=/opt/project-dashboard/.env
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/project-dashboard/uploads
+
+[Install]
+WantedBy=multi-user.target

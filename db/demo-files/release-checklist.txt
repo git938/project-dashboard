@@ -1,0 +1,5 @@
+Release checklist
+- Confirm acceptance criteria
+- Verify database backup
+- Run smoke tests
+- Record release notes
