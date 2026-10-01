@@ -110,3 +110,7 @@ Member avatars in dashboard project cards, team/member views, project portfolios
 Profiles include current project involvement, assigned tasks (including completed tasks), and paginated task history. `GET /api/members/:id/task-history?page=1&pageSize=20` returns assignment, assignment-ended, status-change, update and deletion snapshots with recorded timestamps and ticket/project names. Events are written in the same transaction as the task change. This describes assignment history, not proof of who performed an edit or logged working hours. Records remain when tasks are reassigned or soft-deleted.
 
 Migration 006 creates `member_task_history` and captures existing assignments as explicitly labelled baseline snapshots. It cannot reconstruct earlier assignees or historical completion dates that were never stored. Deploy with the service stopped, run `npm run db:migrate --prefix api`, restart, and refresh browsers. No new environment settings. The migration runner matches foreign-key column collations to the existing database; use the runner rather than applying the SQL manually.
+
+### Timeline period switching
+
+The dashboard Time-Based Issue Map keeps all scheduled tasks, including completed tasks, in every period. Week/Month/Quarter changes the date scale; the plotted range expands to contain every task. Avatars and full task names are pinned in the left column rather than squeezed into duration bars. Scroll the chart horizontally for dates and vertically for more tasks.
