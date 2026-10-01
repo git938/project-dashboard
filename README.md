@@ -159,3 +159,18 @@ Deployment: back up MySQL and uploads, stop the service, pull the new code, run
 Migration 007 creates the new table without replacing existing data. Ship the new
 `project-tools.js` and `project-tools-config.json` together with `boot.js` and the
 remaining frontend changes. Refresh browser tabs after deployment. Do not seed production.
+
+### Single-project detail layout
+
+The project dashboard uses a shared project header, summary, brief, file links, and
+status/member sidebar. A horizontal tab bar switches Overview, Timeline, Issues,
+WBS, Board, Gantt, and the nine management sections inside that project page.
+The project selector preserves the current tab. Tab URLs use
+`#project=<internal-id>&tool=<section>` and survive refresh; keyboard users can
+move between tab buttons with Left/Right/Home/End and activate with Enter/Space.
+Tab arrows expose additional sections on narrow screens. Gantt/WBS/Board reuse
+the existing task editors and save flows while remaining project-scoped.
+
+This layout update is frontend-only. Deploy `project-detail.js` together with the
+updated boot script, workspace, planning, tools, and CSS; no migration beyond 007
+is required. Refresh existing browser tabs after deployment.
