@@ -27,6 +27,8 @@ test('timeline avatar uses the current member photo, initials or unassigned fall
  sandbox.Workspace=sandbox.window.Workspace;vm.createContext(sandbox);vm.runInContext(code.slice(code.indexOf('function taskAvatar('),code.indexOf('function renderTimeline(')),sandbox);
  assert.match(sandbox.taskAvatar({assigneeId:'one'}),/<img.*src="\/api\/members\/one\/avatar\?v=2".*alt="Robin"/);
  assert.match(sandbox.taskAvatar({assigneeId:'two'}),/>DC<\/span>/);
+ assert.match(sandbox.taskAvatar({assigneeId:'two'}),/data-member-profile="two" role="link" tabindex="0"/);
+ assert.doesNotMatch(sandbox.taskAvatar({assigneeId:null}),/data-member-profile/);
  assert.match(sandbox.taskAvatar({assigneeId:null}),/>\?<\/span>/);
  members[0].avatar='';members[0].name='Renamed Person';assert.match(sandbox.taskAvatar({assigneeId:'one'}),/>RP<\/span>/);
 });

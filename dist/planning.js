@@ -36,7 +36,7 @@
  const baseRender=render;render=function(){baseRender();syncOverview();if(view!=='overview')draw()};
  const originalCreate=openCreate;openCreate=function(t){if(t==='issue')openTask();else originalCreate(t)};
  // The overview's issue map uses the same editable task records.
- document.addEventListener('click',e=>{let issue=e.target.closest('[data-issue]');if(issue){e.stopImmediatePropagation();openTask(issues[Number(issue.dataset.issue)].id)}},true);
+ document.addEventListener('click',e=>{let issue=e.target.closest('[data-issue]');if(issue&&!e.target.closest('[data-member-profile]')){e.stopImmediatePropagation();openTask(issues[Number(issue.dataset.issue)].id)}},true);
  document.querySelectorAll('nav [data-view]').forEach(b=>{let original=b.onclick;b.onclick=()=>{show('overview');original()}});
  document.querySelectorAll('[data-plan]').forEach(b=>b.onclick=()=>show(b.dataset.plan));
  surface.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.switch)show(b.dataset.switch);if(b.dataset.edit)openTask(b.dataset.edit);if(b.dataset.toggle){let key=b.dataset.toggle;closed.has(key)?closed.delete(key):closed.add(key);draw()}if(b.dataset.package)openTask(null,{projectId:b.dataset.package,phase:b.dataset.phase});if(b.dataset.newStatus)openTask(null,{status:b.dataset.newStatus});if(b.id==='add-task')openTask();if(b.id==='expand-wbs'){closed.clear();draw()}if(b.id==='collapse-wbs'){projects.forEach(p=>closed.add(p.id));draw()}});

@@ -102,3 +102,11 @@ Tickets receive server-assigned `ticketNumber` and `ticketKey` such as REV-1. Co
 Click a member name/photo in Teams & members, or a toolbar/team-summary avatar, to open the profile. It lists projects where the member is a manager, direct member, project-team member or task assignee, and all assigned tickets with type, status and due date.
 
 VPS deployment: back up MySQL and uploads, stop project-dashboard.service, pull the new commit, run `npm ci --prefix api`, then `npm run db:migrate --prefix api`, and restart the service. Do not seed production. Migration 005 is implemented in `api/migrations/project-keys.js` because it needs a collision-safe, resumable backfill: it derives keys from existing project IDs and numbers all existing tickets (including deleted ones) in creation order. No environment changes are needed. Refresh open browser tabs after deployment to load the new fields and versions.
+
+### Member work history (migration 006)
+
+Member avatars in dashboard project cards, team/member views, project portfolios, calendar attendee lists, Kanban and timeline bars open the member profile. Clicking the rest of a timeline task still opens the task editor; avatar links also support keyboard activation.
+
+Profiles include current project involvement, assigned tasks (including completed tasks), and paginated task history. `GET /api/members/:id/task-history?page=1&pageSize=20` returns assignment, assignment-ended, status-change, update and deletion snapshots with recorded timestamps and ticket/project names. Events are written in the same transaction as the task change. This describes assignment history, not proof of who performed an edit or logged working hours. Records remain when tasks are reassigned or soft-deleted.
+
+Migration 006 creates `member_task_history` and captures existing assignments as explicitly labelled baseline snapshots. It cannot reconstruct earlier assignees or historical completion dates that were never stored. Deploy with the service stopped, run `npm run db:migrate --prefix api`, restart, and refresh browsers. No new environment settings. The migration runner matches foreign-key column collations to the existing database; use the runner rather than applying the SQL manually.

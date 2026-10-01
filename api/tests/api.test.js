@@ -15,6 +15,7 @@ function multipart(fields,buffer,filename='fixture.txt'){const boundary='----tes
 before(async()=>{pool=createPool();dir=await mkdtemp(path.join(os.tmpdir(),'dashboard-api-test-'));app=await buildApp({pool,logger:false,settings:{...config,uploadDir:dir,maxUpload:2048,maxAvatar:512}});await app.ready();});
 after(async()=>{for(const [type,id] of created.reverse()){
  await pool.execute('DELETE FROM activity WHERE entity_id=?',[id]);
+ if(type==='issues')await pool.execute('DELETE FROM member_task_history WHERE issue_id=?',[id]);
  for(const [table,column] of [['event_attendees','event_id'],['team_members','team_id'],['project_members','project_id']]) if((type==='events'&&table==='event_attendees')||(type==='teams'&&table==='team_members')||(type==='projects'&&table==='project_members'))await pool.execute(`DELETE FROM ${table} WHERE ${column}=?`,[id]);
  await pool.execute(`DELETE FROM ${type} WHERE id=?`,[id]);
 }await app?.close();await pool?.end();if(dir)await rm(dir,{recursive:true,force:true});});
@@ -105,4 +106,18 @@ test('project keys, concurrent ticket numbers, project-scoped types and stable i
  assert.equal((await call('DELETE','/api/issues/'+tickets[0].id)).statusCode,204);
  const next=await create('issues',{...ticket,kind:'Subtask'});assert.equal(next.ticketNumber,7);
  const removed=await call('PATCH','/api/projects/'+p.id,{ticketTypes:['Task','Bug','Subtask','Research'],version:p.version});assert.equal(removed.statusCode,200,removed.body);
+});
+
+test('member task history survives reassignment and deletion and supports pagination',async()=>{
+ const a=await create('members',{name:'History A'}),b=await create('members',{name:'History B'});
+ const p=await create('projects',{name:'History project',startDate:'2026-10-01',endDate:'2026-10-05'});
+ const t=await create('issues',{projectId:p.id,name:'History task',assigneeId:a.id,startDate:'2026-10-01',endDate:'2026-10-02'});
+ for(const update of [{status:'In Progress'},{status:'Done'},{assigneeId:b.id}])assert.equal((await call('PATCH','/api/issues/'+t.id,update)).statusCode,200);
+ const history=(await call('GET','/api/members/'+a.id+'/task-history')).json();
+ assert.deepEqual(history.data.map(r=>r.event),['unassigned','status_changed','status_changed','assigned']);
+ assert.equal(history.data[1].status,'Done');assert.equal(history.data[1].previousStatus,'In Progress');assert.equal(history.data[0].ticketKey,t.ticketKey);
+ assert.equal((await call('DELETE','/api/issues/'+t.id)).statusCode,204);
+ const other=(await call('GET','/api/members/'+b.id+'/task-history')).json();assert.equal(other.data[0].event,'deleted');assert.equal(other.data[1].ticketDeleted,true);
+ const page=(await call('GET','/api/members/'+a.id+'/task-history?page=2&pageSize=2')).json();assert.equal(page.pagination.total,4);assert.equal(page.data.length,2);
+ assert.equal((await call('GET','/api/members/'+a.id+'/task-history?page=0')).statusCode,400);
 });

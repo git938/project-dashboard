@@ -34,9 +34,19 @@ export async function decorate(connection, type, rows) {
   }
   return results;
 }
-export async function audit(connection, request, type, row, action) {
+export async function audit(connection, request, type, row, action, before = null) {
   const actor = String(request.headers['x-authenticated-user'] || 'local').slice(0, 160);
   const project = type === 'projects' ? row.id : row.project_id || null;
+  if(type==='issues'){
+    const [[projectRow]]=await connection.execute('SELECT project_key,name FROM projects WHERE id=?',[row.project_id]);
+    const record=async(memberId,event,snapshot)=>{if(!memberId)return;await connection.execute('INSERT INTO member_task_history(member_id,issue_id,ticket_key,task_name,project_name,kind,status,previous_status,event) VALUES (?,?,?,?,?,?,?,?,?)',[memberId,row.id,projectRow.project_key+'-'+row.ticket_number,row.name,projectRow.name,row.kind,snapshot.status,before?.status||null,event])};
+    if(action==='deleted')await record(row.assignee_id,'deleted',row);
+    else if(!before||before.assignee_id!==row.assignee_id){
+      if(before?.assignee_id)await record(before.assignee_id,'unassigned',before);
+      await record(row.assignee_id,'assigned',row);
+    }else await record(row.assignee_id,before.status!==row.status?'status_changed':'updated',row);
+  }
+
   await connection.execute('INSERT INTO activity (project_id,actor,action,entity_type,entity_id,summary) VALUES (?,?,?,?,?,?)', [project, actor, action, type, row.id, `${action}: ${row.name || row.title || row.id}`.slice(0, 500)]);
 }
 export function checkVersion(body, row) {
@@ -123,7 +133,7 @@ export async function saveRecord(connection, request, type, body, { id, replace 
     for (const member of values[key]) await connection.execute(`INSERT INTO ${table} (${owner},${column}) VALUES (?,?)`, [recordId, member]);
   }
   const row = await getRecord(connection, type, recordId);
-  await audit(connection, request, type, row, old ? 'updated' : 'created');
+  await audit(connection, request, type, row, old ? 'updated' : 'created', old);
   const [result] = await decorate(connection, type, [row]);
   return result;
 }

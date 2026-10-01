@@ -2,6 +2,13 @@ import { resources, bodySchema, querySchema, paramsSchema, responseSchema } from
 import { transaction } from '../db.js';
 import { getRecord, decorate, saveRecord, audit, checkVersion, snake, fail, serialize } from '../services/records.js';
 export async function resourceRoutes(app) {
+  app.get('/api/members/:id/task-history',{schema:{tags:['members'],params:paramsSchema,querystring:{type:'object',additionalProperties:false,properties:{page:{type:'integer',minimum:1,maximum:1000000,default:1},pageSize:{type:'integer',minimum:1,maximum:100,default:20}}}}},async request=>{
+    await getRecord(app.db,'members',request.params.id);
+    const {page,pageSize}=request.query;
+    const [[count]]=await app.db.execute('SELECT COUNT(*) AS total FROM member_task_history WHERE member_id=?',[request.params.id]);
+    const [rows]=await app.db.query('SELECT h.*,i.deleted_at AS ticket_deleted_at FROM member_task_history h JOIN issues i ON i.id=h.issue_id WHERE h.member_id=? ORDER BY h.recorded_at DESC,h.id DESC LIMIT ? OFFSET ?',[request.params.id,pageSize,(page-1)*pageSize]);
+    return {data:rows.map(r=>({...serialize(r),recordedAt:new Date(r.recorded_at.replace(' ','T')+'Z').toISOString(),ticketDeleted:!!r.ticket_deleted_at})),pagination:{page,pageSize,total:Number(count.total)}};
+  });
   for (const type of [...Object.keys(resources), 'activity']) {
     app.get(`/api/${type}`, { schema: { tags: [type], querystring: querySchema(type), response: { 200: responseSchema(type, true) } } }, async request => {
       const q = request.query, where = [], params = [];

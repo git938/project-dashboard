@@ -40,5 +40,22 @@ try {
     await c.query("INSERT INTO schema_migrations(version) VALUES ('004_ticket_images')");
   }
   await migrateProjectKeys(c, config.db.database);
+  const [memberHistory]=await c.query("SELECT version FROM schema_migrations WHERE version='006_member_task_history'");
+  if(!memberHistory.length){
+    let historySql=await readFile(path.join(root,'db/migrations/006_member_task_history.sql'),'utf8');
+    for(const [table,column] of [['members','member_id'],['issues','issue_id']]){
+      const [[definition]]=await c.query('SELECT CHARACTER_SET_NAME AS charsetName,COLLATION_NAME AS collationName FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=? AND TABLE_NAME=? AND COLUMN_NAME=?',[config.db.database,table,'id']);
+      if(!/^[a-zA-Z0-9_]+$/.test(definition.charsetName)||!/^[a-zA-Z0-9_]+$/.test(definition.collationName))throw Error('Invalid ID column character set');
+      historySql=historySql.replace(column+' VARCHAR(64) NOT NULL',column+` VARCHAR(64) CHARACTER SET ${definition.charsetName} COLLATE ${definition.collationName} NOT NULL`);
+    }
+    await c.query(historySql);
+    await c.beginTransaction();
+    try {
+      await c.query(`INSERT INTO member_task_history(member_id,issue_id,ticket_key,task_name,project_name,kind,status,event)
+        SELECT i.assignee_id,i.id,CONCAT(p.project_key,'-',i.ticket_number),i.name,p.name,i.kind,i.status,'baseline'
+        FROM issues i JOIN projects p ON p.id=i.project_id WHERE i.assignee_id IS NOT NULL`);
+      await c.query("INSERT INTO schema_migrations(version) VALUES ('006_member_task_history')");await c.commit();
+    }catch(error){await c.rollback();throw error}
+  }
   console.log('Database migrations complete. No seed data was loaded.');
 } finally { await c.query("SELECT RELEASE_LOCK('project_dashboard_migrations')").catch(()=>{}); await c.end(); }
