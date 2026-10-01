@@ -121,3 +121,43 @@ test('member task history survives reassignment and deletion and supports pagina
  const page=(await call('GET','/api/members/'+a.id+'/task-history?page=2&pageSize=2')).json();assert.equal(page.pagination.total,4);assert.equal(page.data.length,2);
  assert.equal((await call('GET','/api/members/'+a.id+'/task-history?page=0')).statusCode,400);
 });
+
+test('project tools persist independently, reject stale saves and validate members, dates, costs and RACI',async()=>{
+ const member=await create('members',{name:'Project tools test'});
+ const project=await create('projects',{name:'Project tools test',startDate:'2026-10-01',endDate:'2026-11-01'});
+ const other=await create('projects',{name:'Isolated tools test',startDate:'2026-10-01',endDate:'2026-11-01'});
+ const base=`/api/projects/${project.id}/tools`;
+ const examples={
+  charter:{name:'Scope',objectives:'Launch',scope:'Web',status:'Draft'},
+  plan:{name:'Delivery',approach:'Phases',status:'Approved',startDate:'2026-10-01',endDate:'2026-11-01'},
+  reports:{name:'Weekly',date:'2026-10-01',status:'On track',progress:'Started'},
+  risks:{name:'Dependency',likelihood:'High',impact:'High',mitigation:'Alternative',status:'Open'},
+  budget:{name:'Hosting',currency:'JPY',planned:100,actual:25.55},
+  resources:{name:'Development',owner:member.id,startDate:'2026-10-01',endDate:'2026-11-01',planned:40,capacity:32},
+  communication:{name:'Review',audience:'Sponsors',channel:'Meeting',frequency:'Weekly'},
+  changes:{name:'New scope',date:'2026-10-01',reason:'Customer need',status:'Proposed'},
+  raci:{name:'Launch',responsible:[member.id],accountable:member.id,consulted:[],informed:[]}
+ };
+ assert.equal(Object.keys((await call('GET',base)).json().data).length,9);
+ for(const [section,fields] of Object.entries(examples)){
+  const entries=[{id:randomUUID(),...fields}];
+  const saved=await call('PUT',base+'/'+section,{version:0,entries});assert.equal(saved.statusCode,200,saved.body);
+  assert.deepEqual((await call('GET',base)).json().data[section].entries,entries);
+  assert.equal((await call('PUT',base+'/'+section,{version:0,entries})).statusCode,409);
+  assert.deepEqual((await call('GET',`/api/projects/${other.id}/tools`)).json().data[section].entries,[]);
+ }
+ const invalid=async(section,patch)=>{const response=await call('PUT',base+'/'+section,{version:1,entries:[{id:'invalid',...examples[section],...patch}]});assert.equal(response.statusCode,400,response.body)};
+ await invalid('budget',{actual:-1});await invalid('budget',{actual:1.111});
+ await invalid('resources',{owner:'missing-member'});await invalid('resources',{endDate:'2026-09-01'});
+ await invalid('reports',{date:'2026-02-30'});await invalid('raci',{responsible:[]});await invalid('raci',{accountable:''});
+ await invalid('charter',{scope:'  '});await invalid('charter',{unexpected:'field'});
+ const conflicting=await Promise.all([1,2].map(n=>call('PUT',base+'/budget',{version:1,entries:[{id:'cost',...examples.budget,actual:n}]})));
+ assert.deepEqual(conflicting.map(r=>r.statusCode).sort(),[200,409]);
+ assert.equal((await call('PUT',base+'/budget',{version:2,entries:[]})).statusCode,200);
+ assert.deepEqual((await call('GET',base)).json().data.budget.entries,[]);
+ assert.equal((await call('GET','/api/projects/no-project/tools')).statusCode,404);
+ assert.equal((await call('PUT',base+'/unknown',{version:0,entries:[]})).statusCode,404);
+ const activity=(await call('GET',`/api/activity?projectId=${project.id}`)).json().data;
+ assert.ok(activity.some(a=>a.entityType==='project_tools'));
+ await pool.execute('DELETE FROM activity WHERE project_id IN (?,?)',[project.id,other.id]);
+});

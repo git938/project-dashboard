@@ -7401,6 +7401,1003 @@
         }
       }
     },
+    "/api/projects/{id}/tools": {
+      "get": {
+        "tags": [
+          "project tools"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/tools/charter": {
+      "put": {
+        "tags": [
+          "project tools"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "entries",
+                  "version"
+                ],
+                "properties": {
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "entries": {
+                    "type": "array",
+                    "maxItems": 1,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "name",
+                        "objectives",
+                        "scope",
+                        "status"
+                      ],
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "maxLength": 240,
+                          "minLength": 1
+                        },
+                        "objectives": {
+                          "type": "string",
+                          "maxLength": 4000,
+                          "minLength": 1
+                        },
+                        "scope": {
+                          "type": "string",
+                          "maxLength": 4000,
+                          "minLength": 1
+                        },
+                        "exclusions": {
+                          "type": "string",
+                          "maxLength": 4000
+                        },
+                        "deliverables": {
+                          "type": "string",
+                          "maxLength": 4000
+                        },
+                        "sponsor": {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        "owner": {
+                          "type": "string",
+                          "maxLength": 64
+                        },
+                        "constraints": {
+                          "type": "string",
+                          "maxLength": 4000
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "Draft",
+                            "In review",
+                            "Approved"
+                          ]
+                        },
+                        "approval": {
+                          "type": "string",
+                          "maxLength": 4000
+                        },
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/tools/plan": {
+      "put": {
+        "tags": [
+          "project tools"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "entries",
+                  "version"
+                ],
+                "properties": {
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "entries": {
+                    "type": "array",
+                    "maxItems": 1,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "name",
+                        "approach",
+                        "status"
+                      ],
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "maxLength": 240,
+                          "minLength": 1
+                        },
+                        "approach": {
+                          "type": "string",
+                          "maxLength": 4000,
+                          "minLength": 1
+                        },
+                        "dependencies": {
+                          "type": "string",
+                          "maxLength": 4000
+                        },
+                        "startDate": {
+                          "type": "string",
+                          "pattern": "^(|\\d{4}-\\d{2}-\\d{2})$"
+                        },
+                        "endDate": {
+                          "type": "string",
+                          "pattern": "^(|\\d{4}-\\d{2}-\\d{2})$"
+                        },
+                        "baseline": {
+                          "type": "string",
+                          "maxLength": 4000
+                        },
+                        "resources": {
+                          "type": "string",
+                          "maxLength": 4000
+                        },
+                        "budget": {
+                          "type": "string",
+                          "maxLength": 4000
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "Draft",
+                            "Approved",
+                            "In progress",
+                            "Complete"
+                          ]
+                        },
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/tools/reports": {
+      "put": {
+        "tags": [
+          "project tools"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "entries",
+                  "version"
+                ],
+                "properties": {
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "entries": {
+                    "type": "array",
+                    "maxItems": 500,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "name",
+                        "date",
+                        "status",
+                        "progress"
+                      ],
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "maxLength": 240,
+                          "minLength": 1
+                        },
+                        "date": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "On track",
+                            "At risk",
+                            "Off track",
+                            "Complete"
+                          ]
+                        },
+                        "owner": {
+                          "type": "string",
+                          "maxLength": 64
+                        },
+                        "progress": {
+                          "type": "string",
+                          "maxLength": 4000,
+                          "minLength": 1
+                        },
+                        "risks": {
+                          "type": "string",
+                          "maxLength": 4000
+                        },
+                        "issues": {
+                          "type": "string",
+                          "maxLength": 4000
+                        },
+                        "nextSteps": {
+                          "type": "string",
+                          "maxLength": 4000
+                        },
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/tools/risks": {
+      "put": {
+        "tags": [
+          "project tools"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "entries",
+                  "version"
+                ],
+                "properties": {
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "entries": {
+                    "type": "array",
+                    "maxItems": 500,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "name",
+                        "likelihood",
+                        "impact",
+                        "mitigation",
+                        "status"
+                      ],
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "maxLength": 240,
+                          "minLength": 1
+                        },
+                        "likelihood": {
+                          "type": "string",
+                          "enum": [
+                            "Low",
+                            "Medium",
+                            "High"
+                          ]
+                        },
+                        "impact": {
+                          "type": "string",
+                          "enum": [
+                            "Low",
+                            "Medium",
+                            "High"
+                          ]
+                        },
+                        "owner": {
+                          "type": "string",
+                          "maxLength": 64
+                        },
+                        "mitigation": {
+                          "type": "string",
+                          "maxLength": 4000,
+                          "minLength": 1
+                        },
+                        "contingency": {
+                          "type": "string",
+                          "maxLength": 4000
+                        },
+                        "date": {
+                          "type": "string",
+                          "pattern": "^(|\\d{4}-\\d{2}-\\d{2})$"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "Open",
+                            "Mitigating",
+                            "Closed"
+                          ]
+                        },
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/tools/budget": {
+      "put": {
+        "tags": [
+          "project tools"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "entries",
+                  "version"
+                ],
+                "properties": {
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "entries": {
+                    "type": "array",
+                    "maxItems": 500,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "name",
+                        "currency",
+                        "planned",
+                        "actual"
+                      ],
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "maxLength": 240,
+                          "minLength": 1
+                        },
+                        "category": {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        "currency": {
+                          "type": "string",
+                          "enum": [
+                            "JPY",
+                            "USD",
+                            "EUR",
+                            "GBP",
+                            "CNY"
+                          ]
+                        },
+                        "planned": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1000000000
+                        },
+                        "actual": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1000000000
+                        },
+                        "owner": {
+                          "type": "string",
+                          "maxLength": 64
+                        },
+                        "date": {
+                          "type": "string",
+                          "pattern": "^(|\\d{4}-\\d{2}-\\d{2})$"
+                        },
+                        "notes": {
+                          "type": "string",
+                          "maxLength": 4000
+                        },
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/tools/resources": {
+      "put": {
+        "tags": [
+          "project tools"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "entries",
+                  "version"
+                ],
+                "properties": {
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "entries": {
+                    "type": "array",
+                    "maxItems": 500,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "name",
+                        "owner",
+                        "startDate",
+                        "endDate",
+                        "planned",
+                        "capacity"
+                      ],
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "maxLength": 240,
+                          "minLength": 1
+                        },
+                        "owner": {
+                          "type": "string",
+                          "maxLength": 64,
+                          "minLength": 1
+                        },
+                        "startDate": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "endDate": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "planned": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1000000000
+                        },
+                        "capacity": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1000000000
+                        },
+                        "notes": {
+                          "type": "string",
+                          "maxLength": 4000
+                        },
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/tools/communication": {
+      "put": {
+        "tags": [
+          "project tools"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "entries",
+                  "version"
+                ],
+                "properties": {
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "entries": {
+                    "type": "array",
+                    "maxItems": 500,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "name",
+                        "audience",
+                        "channel",
+                        "frequency"
+                      ],
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "maxLength": 240,
+                          "minLength": 1
+                        },
+                        "audience": {
+                          "type": "string",
+                          "maxLength": 4000,
+                          "minLength": 1
+                        },
+                        "owner": {
+                          "type": "string",
+                          "maxLength": 64
+                        },
+                        "channel": {
+                          "type": "string",
+                          "maxLength": 240,
+                          "minLength": 1
+                        },
+                        "frequency": {
+                          "type": "string",
+                          "maxLength": 240,
+                          "minLength": 1
+                        },
+                        "date": {
+                          "type": "string",
+                          "pattern": "^(|\\d{4}-\\d{2}-\\d{2})$"
+                        },
+                        "notes": {
+                          "type": "string",
+                          "maxLength": 4000
+                        },
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/tools/changes": {
+      "put": {
+        "tags": [
+          "project tools"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "entries",
+                  "version"
+                ],
+                "properties": {
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "entries": {
+                    "type": "array",
+                    "maxItems": 500,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "name",
+                        "date",
+                        "reason",
+                        "status"
+                      ],
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "maxLength": 240,
+                          "minLength": 1
+                        },
+                        "date": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "owner": {
+                          "type": "string",
+                          "maxLength": 64
+                        },
+                        "reason": {
+                          "type": "string",
+                          "maxLength": 4000,
+                          "minLength": 1
+                        },
+                        "scope": {
+                          "type": "string",
+                          "maxLength": 4000
+                        },
+                        "schedule": {
+                          "type": "string",
+                          "maxLength": 4000
+                        },
+                        "cost": {
+                          "type": "string",
+                          "maxLength": 4000
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "Proposed",
+                            "In review",
+                            "Approved",
+                            "Rejected",
+                            "Implemented"
+                          ]
+                        },
+                        "decision": {
+                          "type": "string",
+                          "maxLength": 4000
+                        },
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/tools/raci": {
+      "put": {
+        "tags": [
+          "project tools"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "entries",
+                  "version"
+                ],
+                "properties": {
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "entries": {
+                    "type": "array",
+                    "maxItems": 500,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "name",
+                        "responsible",
+                        "accountable"
+                      ],
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "maxLength": 240,
+                          "minLength": 1
+                        },
+                        "responsible": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 64
+                          },
+                          "uniqueItems": true,
+                          "maxItems": 200,
+                          "minItems": 1
+                        },
+                        "accountable": {
+                          "type": "string",
+                          "maxLength": 64,
+                          "minLength": 1
+                        },
+                        "consulted": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 64
+                          },
+                          "uniqueItems": true,
+                          "maxItems": 200
+                        },
+                        "informed": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 64
+                          },
+                          "uniqueItems": true,
+                          "maxItems": 200
+                        },
+                        "notes": {
+                          "type": "string",
+                          "maxLength": 4000
+                        },
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
     "/api/documents/upload": {
       "post": {
         "tags": [

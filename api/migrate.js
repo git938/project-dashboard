@@ -57,5 +57,10 @@ try {
       await c.query("INSERT INTO schema_migrations(version) VALUES ('006_member_task_history')");await c.commit();
     }catch(error){await c.rollback();throw error}
   }
+  const [[projectIdColumn]]=await c.query("SELECT CHARACTER_SET_NAME AS charsetName,COLLATION_NAME AS collationName FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=? AND TABLE_NAME='projects' AND COLUMN_NAME='id'",[config.db.database]);
+  if(!/^[a-zA-Z0-9_]+$/.test(projectIdColumn.charsetName)||!/^[a-zA-Z0-9_]+$/.test(projectIdColumn.collationName))throw Error('Invalid project ID collation');
+  const toolsSql=(await readFile(path.join(root,'db/migrations/007_project_tools.sql'),'utf8')).replace('project_id VARCHAR(64) NOT NULL',`project_id VARCHAR(64) CHARACTER SET ${projectIdColumn.charsetName} COLLATE ${projectIdColumn.collationName} NOT NULL`);
+  await c.query(toolsSql);
+  await c.query("INSERT IGNORE INTO schema_migrations(version) VALUES ('007_project_tools')");
   console.log('Database migrations complete. No seed data was loaded.');
 } finally { await c.query("SELECT RELEASE_LOCK('project_dashboard_migrations')").catch(()=>{}); await c.end(); }

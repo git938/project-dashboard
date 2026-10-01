@@ -124,3 +124,38 @@ It shows task totals, completion, in-progress/overdue/due-soon counts, current s
 This is a frontend-only change; no new database migration or environment settings. Deploy the latest frontend files together, including `project-dashboard.js` and the updated `boot.js`.
 
 The project command center includes a Time-Based Issue Map directly below its summary metrics. It shares the main dashboard renderer and shows only the selected project's scheduled tasks, with pastel duration bars, assignee avatars, Today marker and Week/Month/Quarter controls. Period changes retain all tasks; names and avatars remain pinned while dates scroll. Task labels open tickets, avatars open member profiles, and Open Gantt keeps the same project filter.
+
+## Project management toolkit (migration 007)
+
+Every project dashboard now links to all twelve management areas: Charter, Plan,
+Gantt, Status Reports, Risk Register, Issue Tracker, Budget, Resource Plan,
+Communication Plan, Change Log, WBS, and RACI.
+
+Nine new structured record sections are stored in `project_tools`. Charter and Plan
+have one editable record each; the other sections support up to 500 entries each.
+Existing tickets and work packages power Issue Tracker and WBS. Gantt now includes
+editable milestone markers, including milestone dates outside the task range.
+
+- `GET /api/projects/:id/tools` returns all nine sections, each with `entries` and `version`.
+- `PUT /api/projects/:id/tools/:section` replaces that section with `{version, entries}`.
+  Each entry has a stable `id`; version 0 creates an empty section's first revision.
+  Stale saves return 409 and must be reviewed/reloaded, not overwritten blindly.
+- Section keys: `charter`, `plan`, `reports`, `risks`, `budget`, `resources`,
+  `communication`, `changes`, `raci`. Field contracts are in the OpenAPI document
+  and shared `dist/project-tools-config.json`.
+- Member references and real calendar dates are validated. Costs must be nonnegative
+  with at most two decimal places. Totals are grouped by currency, without conversion.
+- Resource allocations compare hours against the capacity entered for each date range;
+  overlapping rows and allocations across projects require planning judgment.
+- RACI requires at least one responsible member and exactly one accountable member.
+- Status reports store authored progress/risk/issue updates; the adjacent task counts
+  are live figures, not historical snapshots. Changes are manually logged decisions;
+  approving a change does not automatically alter ticket dates or project scope.
+- Section export and workspace JSON backup include these records. No sample plans,
+  risks, approvals, or financial figures are inserted into existing projects.
+
+Deployment: back up MySQL and uploads, stop the service, pull the new code, run
+`npm ci --prefix api` and `npm run db:migrate --prefix api`, then restart the service.
+Migration 007 creates the new table without replacing existing data. Ship the new
+`project-tools.js` and `project-tools-config.json` together with `boot.js` and the
+remaining frontend changes. Refresh browser tabs after deployment. Do not seed production.

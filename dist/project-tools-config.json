@@ -1,0 +1,543 @@
+{
+  "charter": {
+    "title": "Project Charter",
+    "description": "Define why the project exists, its boundaries, and how success is approved.",
+    "fields": [
+      {
+        "key": "name",
+        "label": "Charter title",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "objectives",
+        "label": "Objectives and success criteria",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "key": "scope",
+        "label": "In scope",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "key": "exclusions",
+        "label": "Out of scope",
+        "type": "textarea",
+        "required": false
+      },
+      {
+        "key": "deliverables",
+        "label": "Deliverables",
+        "type": "textarea",
+        "required": false
+      },
+      {
+        "key": "sponsor",
+        "label": "Sponsor / stakeholder",
+        "type": "text",
+        "required": false
+      },
+      {
+        "key": "owner",
+        "label": "Project owner",
+        "type": "member",
+        "required": false
+      },
+      {
+        "key": "constraints",
+        "label": "Constraints and assumptions",
+        "type": "textarea",
+        "required": false
+      },
+      {
+        "key": "status",
+        "label": "Status",
+        "type": "select",
+        "required": true,
+        "options": [
+          "Draft",
+          "In review",
+          "Approved"
+        ]
+      },
+      {
+        "key": "approval",
+        "label": "Approval notes",
+        "type": "textarea",
+        "required": false
+      }
+    ],
+    "single": true
+  },
+  "plan": {
+    "title": "Project Plan",
+    "description": "Coordinate delivery approach and dependencies. Tasks, dates, costs, and allocations are linked below.",
+    "fields": [
+      {
+        "key": "name",
+        "label": "Plan title",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "approach",
+        "label": "Delivery approach",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "key": "dependencies",
+        "label": "Dependencies",
+        "type": "textarea",
+        "required": false
+      },
+      {
+        "key": "startDate",
+        "label": "Planned start",
+        "type": "date",
+        "required": false
+      },
+      {
+        "key": "endDate",
+        "label": "Planned finish",
+        "type": "date",
+        "required": false
+      },
+      {
+        "key": "baseline",
+        "label": "Scope and schedule baseline",
+        "type": "textarea",
+        "required": false
+      },
+      {
+        "key": "resources",
+        "label": "Resource assumptions",
+        "type": "textarea",
+        "required": false
+      },
+      {
+        "key": "budget",
+        "label": "Budget assumptions",
+        "type": "textarea",
+        "required": false
+      },
+      {
+        "key": "status",
+        "label": "Status",
+        "type": "select",
+        "required": true,
+        "options": [
+          "Draft",
+          "Approved",
+          "In progress",
+          "Complete"
+        ]
+      }
+    ],
+    "single": true
+  },
+  "reports": {
+    "title": "Project Status Report",
+    "description": "Save dated updates on progress, risks, issues, and next steps alongside live project metrics.",
+    "fields": [
+      {
+        "key": "name",
+        "label": "Report title",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "date",
+        "label": "Report date",
+        "type": "date",
+        "required": true
+      },
+      {
+        "key": "status",
+        "label": "Status",
+        "type": "select",
+        "required": true,
+        "options": [
+          "On track",
+          "At risk",
+          "Off track",
+          "Complete"
+        ]
+      },
+      {
+        "key": "owner",
+        "label": "Author",
+        "type": "member",
+        "required": false
+      },
+      {
+        "key": "progress",
+        "label": "Progress and achievements",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "key": "risks",
+        "label": "Risks",
+        "type": "textarea",
+        "required": false
+      },
+      {
+        "key": "issues",
+        "label": "Issues and decisions needed",
+        "type": "textarea",
+        "required": false
+      },
+      {
+        "key": "nextSteps",
+        "label": "Next steps",
+        "type": "textarea",
+        "required": false
+      }
+    ],
+    "single": false
+  },
+  "risks": {
+    "title": "Risk Register",
+    "description": "Assess risks and assign mitigation actions and owners.",
+    "fields": [
+      {
+        "key": "name",
+        "label": "Risk",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "likelihood",
+        "label": "Likelihood",
+        "type": "select",
+        "required": true,
+        "options": [
+          "Low",
+          "Medium",
+          "High"
+        ]
+      },
+      {
+        "key": "impact",
+        "label": "Impact",
+        "type": "select",
+        "required": true,
+        "options": [
+          "Low",
+          "Medium",
+          "High"
+        ]
+      },
+      {
+        "key": "owner",
+        "label": "Owner",
+        "type": "member",
+        "required": false
+      },
+      {
+        "key": "mitigation",
+        "label": "Mitigation strategy",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "key": "contingency",
+        "label": "Contingency",
+        "type": "textarea",
+        "required": false
+      },
+      {
+        "key": "date",
+        "label": "Review date",
+        "type": "date",
+        "required": false
+      },
+      {
+        "key": "status",
+        "label": "Status",
+        "type": "select",
+        "required": true,
+        "options": [
+          "Open",
+          "Mitigating",
+          "Closed"
+        ]
+      }
+    ],
+    "single": false
+  },
+  "budget": {
+    "title": "Budget Tracker",
+    "description": "Track planned and actual costs. Totals remain separate for each currency.",
+    "fields": [
+      {
+        "key": "name",
+        "label": "Cost item",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "category",
+        "label": "Category",
+        "type": "text",
+        "required": false
+      },
+      {
+        "key": "currency",
+        "label": "Currency",
+        "type": "select",
+        "required": true,
+        "options": [
+          "JPY",
+          "USD",
+          "EUR",
+          "GBP",
+          "CNY"
+        ]
+      },
+      {
+        "key": "planned",
+        "label": "Planned cost",
+        "type": "money",
+        "required": true
+      },
+      {
+        "key": "actual",
+        "label": "Actual cost",
+        "type": "money",
+        "required": true
+      },
+      {
+        "key": "owner",
+        "label": "Owner",
+        "type": "member",
+        "required": false
+      },
+      {
+        "key": "date",
+        "label": "Cost date",
+        "type": "date",
+        "required": false
+      },
+      {
+        "key": "notes",
+        "label": "Notes",
+        "type": "textarea",
+        "required": false
+      }
+    ],
+    "single": false
+  },
+  "resources": {
+    "title": "Resource Plan",
+    "description": "Allocate member hours for a defined period. Current task assignments remain visible below.",
+    "fields": [
+      {
+        "key": "name",
+        "label": "Work package / role",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "owner",
+        "label": "Member",
+        "type": "member",
+        "required": true
+      },
+      {
+        "key": "startDate",
+        "label": "Period start",
+        "type": "date",
+        "required": true
+      },
+      {
+        "key": "endDate",
+        "label": "Period end",
+        "type": "date",
+        "required": true
+      },
+      {
+        "key": "planned",
+        "label": "Allocated hours",
+        "type": "number",
+        "required": true
+      },
+      {
+        "key": "capacity",
+        "label": "Available hours in this period",
+        "type": "number",
+        "required": true
+      },
+      {
+        "key": "notes",
+        "label": "Responsibilities and constraints",
+        "type": "textarea",
+        "required": false
+      }
+    ],
+    "single": false
+  },
+  "communication": {
+    "title": "Communication Plan",
+    "description": "Define who needs updates, what they receive, and when.",
+    "fields": [
+      {
+        "key": "name",
+        "label": "Communication / topic",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "audience",
+        "label": "Stakeholders / audience",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "key": "owner",
+        "label": "Owner",
+        "type": "member",
+        "required": false
+      },
+      {
+        "key": "channel",
+        "label": "Channel",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "frequency",
+        "label": "Frequency",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "date",
+        "label": "Next communication",
+        "type": "date",
+        "required": false
+      },
+      {
+        "key": "notes",
+        "label": "Content and escalation path",
+        "type": "textarea",
+        "required": false
+      }
+    ],
+    "single": false
+  },
+  "changes": {
+    "title": "Change Log",
+    "description": "Record scope and schedule changes and their decisions. Approved changes do not automatically edit tasks.",
+    "fields": [
+      {
+        "key": "name",
+        "label": "Change request",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "date",
+        "label": "Requested date",
+        "type": "date",
+        "required": true
+      },
+      {
+        "key": "owner",
+        "label": "Requested by",
+        "type": "member",
+        "required": false
+      },
+      {
+        "key": "reason",
+        "label": "Reason",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "key": "scope",
+        "label": "Scope impact",
+        "type": "textarea",
+        "required": false
+      },
+      {
+        "key": "schedule",
+        "label": "Schedule impact",
+        "type": "textarea",
+        "required": false
+      },
+      {
+        "key": "cost",
+        "label": "Cost impact",
+        "type": "textarea",
+        "required": false
+      },
+      {
+        "key": "status",
+        "label": "Status",
+        "type": "select",
+        "required": true,
+        "options": [
+          "Proposed",
+          "In review",
+          "Approved",
+          "Rejected",
+          "Implemented"
+        ]
+      },
+      {
+        "key": "decision",
+        "label": "Decision / approver",
+        "type": "textarea",
+        "required": false
+      }
+    ],
+    "single": false
+  },
+  "raci": {
+    "title": "RACI Matrix",
+    "description": "Assign Responsible, Accountable, Consulted, and Informed roles to each deliverable. One accountable member per row.",
+    "fields": [
+      {
+        "key": "name",
+        "label": "Deliverable / activity",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "responsible",
+        "label": "Responsible",
+        "type": "members",
+        "required": true
+      },
+      {
+        "key": "accountable",
+        "label": "Accountable",
+        "type": "member",
+        "required": true
+      },
+      {
+        "key": "consulted",
+        "label": "Consulted",
+        "type": "members",
+        "required": false
+      },
+      {
+        "key": "informed",
+        "label": "Informed",
+        "type": "members",
+        "required": false
+      },
+      {
+        "key": "notes",
+        "label": "Notes",
+        "type": "textarea",
+        "required": false
+      }
+    ],
+    "single": false
+  }
+}
