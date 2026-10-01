@@ -114,3 +114,11 @@ Migration 006 creates `member_task_history` and captures existing assignments as
 ### Timeline period switching
 
 The dashboard Time-Based Issue Map keeps all scheduled tasks, including completed tasks, in every period. Week/Month/Quarter changes the date scale; the plotted range expands to contain every task. Avatars and full task names are pinned in the left column rather than squeezed into duration bars. Scroll the chart horizontally for dates and vertically for more tasks.
+
+### Per-project command center
+
+Open Projects and click a project name or Dashboard, or click See details on a dashboard project card. Every project has its own command center and bookmarkable URL (`/#project=<internal project ID>`), with a project switcher.
+
+It shows task totals, completion, in-progress/overdue/due-soon counts, current status distribution, schedule elapsed, project details and member profiles, milestones, workload, project-filtered activity with pagination, open tasks, documents and upcoming events. All metrics are calculated from the selected project's actual records. Task completion is count-based; schedule elapsed is calendar-based. There are no invented sprint, attendance or budget figures. Refresh reloads server data. New tasks/milestones and links to boards, Gantt, bugs, documents and calendar are scoped to the selected project.
+
+This is a frontend-only change; no new database migration or environment settings. Deploy the latest frontend files together, including `project-dashboard.js` and the updated `boot.js`.
