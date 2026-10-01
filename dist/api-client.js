@@ -40,7 +40,7 @@ window.ProjectAPI = (() => {
   function payload(type,row,state){const memberId=name=>state.members.find(m=>m.name===name)?.id||null;switch(type){
     case 'members':return {name:row.name,role:row.role||'',email:row.email||null,active:row.active!==false,color:row.color||'#e7e2f3'};
     case 'teams':return {name:row.name,description:row.description||'',memberIds:row.memberIds||[]};
-    case 'projects':return {name:row.name,description:row.description||'',status:row.status||'Active',managerId:row.managerId??memberId(row.manager),memberIds:row.memberIds||[],teamId:row.teamId||null,startDate:row.startDate,endDate:row.endDate,color:row.color||'#aaa0ce'};
+    case 'projects':return {...(row.projectKey?{projectKey:row.projectKey}:{}),ticketTypes:row.ticketTypes||['Task','Bug','Subtask'],name:row.name,description:row.description||'',status:row.status||'Active',managerId:row.managerId??memberId(row.manager),memberIds:row.memberIds||[],teamId:row.teamId||null,startDate:row.startDate,endDate:row.endDate,color:row.color||'#aaa0ce'};
     case 'issues':return {kind:row.kind||'Task',priority:row.priority||'Medium',projectId:row.projectId,name:row.name,description:row.description||'',phase:row.phase,status:row.status,assigneeId:row.assigneeId===undefined?memberId(row.assignee):row.assigneeId,startDate:row.startDate,endDate:row.endDate,sortOrder:row.sortOrder||0};
     case 'milestones':return {projectId:row.projectId||state.projects.find(p=>p.name===row.project)?.id||state.projects[0]?.id,name:row.name,date:row.date,status:row.status||'Planned'};
     case 'notes':return {projectId:row.projectId||null,ownerId:row.ownerId||null,name:row.name,content:row.description??row.content??'',tag:row.tag||''};
@@ -72,5 +72,7 @@ window.ProjectAPI = (() => {
     baseline.documents.set(row.id,payload('documents',ui,{}));return ui;
   }
   async function file(id){const response=await fetch(`/api/documents/${id}/download`);if(!response.ok)throw Error('Could not download the document.');return response.blob();}
-  return {load,save,file,request,uploadTicketImage,toUI,utc,projectPeople,assigneeInitials};
+  const ticketKey=t=>cache.issues.get(t.id)?.ticketKey||t.ticketKey||'Pending number';
+  const projectKey=p=>cache.projects.get(p.id)?.projectKey||p.projectKey||'';
+  return {ticketKey,projectKey,load,save,file,request,uploadTicketImage,toUI,utc,projectPeople,assigneeInitials};
 })();

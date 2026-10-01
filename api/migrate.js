@@ -1,3 +1,4 @@
+import { migrateProjectKeys } from './migrations/project-keys.js';
 import mysql from 'mysql2/promise';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -38,5 +39,6 @@ try {
     if (!columns.length) await c.query('ALTER TABLE documents ADD COLUMN issue_id VARCHAR(64) NULL, ADD CONSTRAINT documents_issue_fk FOREIGN KEY(issue_id) REFERENCES issues(id)');
     await c.query("INSERT INTO schema_migrations(version) VALUES ('004_ticket_images')");
   }
+  await migrateProjectKeys(c, config.db.database);
   console.log('Database migrations complete. No seed data was loaded.');
 } finally { await c.query("SELECT RELEASE_LOCK('project_dashboard_migrations')").catch(()=>{}); await c.end(); }

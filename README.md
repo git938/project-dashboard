@@ -92,3 +92,13 @@ Ticket saving and image uploading are separate operations. If the ticket saves b
 ### Dashboard navigation and timeline
 
 Bug Tracker has a permanent sidebar entry immediately after Notes. Its badge counts open bugs; the table includes completed bugs unless filtered. The dashboard timeline offers calendar Week (Monday–Sunday), Month and Quarter ranges, displays up to four active issues, clips bars to the chosen range, shows assignee avatars and marks today. Open Gantt shows all tasks.
+
+### Project keys, ticket types and member profiles (migration 005)
+
+Projects → New project / Edit now manages a unique `projectKey` (2–16 uppercase letters/digits, starting with a letter) and `ticketTypes` (one name per line). Defaults are Task, Bug and Subtask. Add new types or rename/remove unused ones. Types used by any existing ticket, including deleted tickets, cannot be removed. Subtask is a ticket type; this release does not introduce parent/child task nesting.
+
+Tickets receive server-assigned `ticketNumber` and `ticketKey` such as REV-1. Counters are per project, serialized in the creation transaction, and never reuse committed numbers. Internal IDs and attachment relationships stay unchanged. Once a project has tickets, its key is locked; numbered tickets cannot move to another project. API callers that omit a new project key receive an automatically generated key. Read a ticket by internal ID or key with `GET /api/issues/REV-1`; writes continue to use internal IDs. Ticket-key search is supported by `GET /api/issues?q=REV-1`.
+
+Click a member name/photo in Teams & members, or a toolbar/team-summary avatar, to open the profile. It lists projects where the member is a manager, direct member, project-team member or task assignee, and all assigned tickets with type, status and due date.
+
+VPS deployment: back up MySQL and uploads, stop project-dashboard.service, pull the new commit, run `npm ci --prefix api`, then `npm run db:migrate --prefix api`, and restart the service. Do not seed production. Migration 005 is implemented in `api/migrations/project-keys.js` because it needs a collision-safe, resumable backfill: it derives keys from existing project IDs and numbers all existing tickets (including deleted ones) in creation order. No environment changes are needed. Refresh open browser tabs after deployment to load the new fields and versions.

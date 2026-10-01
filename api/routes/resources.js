@@ -7,7 +7,8 @@ export async function resourceRoutes(app) {
       const q = request.query, where = [], params = [];
       if (type !== 'activity') where.push(`deleted_at IS ${q.trashed ? 'NOT ' : ''}NULL`);
       for (const key of ['projectId', 'status', 'assigneeId', 'teamId', 'type', 'category', 'cancelled', 'kind', 'priority', 'issueId']) if (q[key] !== undefined) { where.push(`${snake(key)}=?`); params.push(q[key]); }
-      if (q.q) { where.push(`${type === 'events' ? 'title' : type === 'activity' ? 'summary' : 'name'} LIKE ?`); params.push(`%${q.q}%`); }
+      if(q.q&&type==='issues'){where.push("(name LIKE ? OR CONCAT((SELECT project_key FROM projects WHERE projects.id=issues.project_id),'-',ticket_number) LIKE ?)");params.push(`%${q.q}%`,`%${q.q}%`);}
+      else if (q.q) { where.push(`${type === 'events' ? 'title' : type === 'activity' ? 'summary' : 'name'} LIKE ?`); params.push(`%${q.q}%`); }
       if (type === 'events') {
         if (q.from && q.to && q.from > q.to) throw fail(400, 'INVALID_DATES', 'from must not be after to.');
         if (q.from) { where.push('((all_day=1 AND end_date>=?) OR (all_day=0 AND end_at>=?))'); params.push(q.from, q.from + ' 00:00:00'); }
@@ -23,7 +24,8 @@ export async function resourceRoutes(app) {
     });
     if (type === 'activity') continue;
     app.get(`/api/${type}/:id`, { schema: { tags: [type], params: paramsSchema, response: { 200: responseSchema(type) } } }, async request => {
-      const row = await getRecord(app.db, type, request.params.id);
+      let lookup=request.params.id;if(type==='issues'){const [existing]=await app.db.execute('SELECT id FROM issues WHERE id=?',[lookup]);const [match]=await app.db.execute("SELECT issues.id FROM issues JOIN projects ON projects.id=issues.project_id WHERE CONCAT(projects.project_key,'-',issues.ticket_number)=? AND issues.deleted_at IS NULL",[lookup]);if(!existing.length&&match.length)lookup=match[0].id;}
+      const row = await getRecord(app.db, type, lookup);
       return { data: (await decorate(app.db, type, [row]))[0] };
     });
     app.post(`/api/${type}`, { schema: { tags: [type], body: bodySchema(type, false, true), response: { 201: responseSchema(type) } } }, async (request, reply) => {

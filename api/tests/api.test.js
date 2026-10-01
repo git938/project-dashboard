@@ -82,3 +82,27 @@ test('CRUD, relationships, date checks, versions, files, soft delete, and origin
  assert.equal((await call('DELETE',`/api/milestones/${milestone.id}`)).statusCode,204);
  assert.equal((await call('GET',`/api/milestones/${milestone.id}`)).statusCode,404);
 });
+
+test('project keys, concurrent ticket numbers, project-scoped types and stable identities',async()=>{
+ const key='Q'+randomUUID().replaceAll('-','').slice(0,10).toUpperCase();
+ let p=await create('projects',{projectKey:key,ticketTypes:['Task','Bug','Subtask','Research'],name:'Key/type regression',startDate:'2026-10-01',endDate:'2026-10-10'});
+ assert.equal(p.projectKey,key);assert.ok(p.ticketTypes.includes('Research'));
+ assert.equal((await call('POST','/api/projects',{projectKey:key,name:'Duplicate key',startDate:'2026-10-01',endDate:'2026-10-02'})).statusCode,409);
+ const ticket={projectId:p.id,name:'Concurrent ticket',kind:'Research',startDate:'2026-10-01',endDate:'2026-10-02'};
+ const tickets=await Promise.all(Array.from({length:6},()=>create('issues',ticket)));
+ assert.equal(new Set(tickets.map(t=>t.ticketNumber)).size,6);assert.deepEqual(tickets.map(t=>t.ticketNumber).sort((a,b)=>a-b),[1,2,3,4,5,6]);
+ assert.ok(tickets.every(t=>t.ticketKey===key+'-'+t.ticketNumber));
+ assert.equal((await call('GET','/api/issues/'+tickets[0].ticketKey)).json().data.id,tickets[0].id);
+ assert.equal((await call('GET','/api/issues?q='+tickets[0].ticketKey)).json().pagination.total,1);
+ assert.equal((await call('POST','/api/issues',{...ticket,kind:'Unconfigured'})).statusCode,400);
+ assert.equal((await call('PATCH','/api/projects/'+p.id,{projectKey:key+'X'})).statusCode,409);
+ assert.equal((await call('PATCH','/api/projects/'+p.id,{ticketTypes:['Task','Bug']})).statusCode,409);
+ const added=await call('PATCH','/api/projects/'+p.id,{ticketTypes:['Task','Bug','Subtask','Research','Support'],version:p.version});assert.equal(added.statusCode,200,added.body);p=added.json().data;
+ assert.equal((await call('PATCH','/api/projects/'+p.id,{ticketTypes:['Task','task']})).statusCode,400);
+ const independent=await create('projects',{name:'Independent types',startDate:'2026-10-01',endDate:'2026-10-10'});
+ assert.equal((await call('POST','/api/issues',{...ticket,projectId:independent.id})).statusCode,400);
+ assert.equal((await call('PATCH','/api/issues/'+tickets[0].id,{projectId:independent.id})).statusCode,409);
+ assert.equal((await call('DELETE','/api/issues/'+tickets[0].id)).statusCode,204);
+ const next=await create('issues',{...ticket,kind:'Subtask'});assert.equal(next.ticketNumber,7);
+ const removed=await call('PATCH','/api/projects/'+p.id,{ticketTypes:['Task','Bug','Subtask','Research'],version:p.version});assert.equal(removed.statusCode,200,removed.body);
+});

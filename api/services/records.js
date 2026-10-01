@@ -6,8 +6,9 @@ export function fail(status, code, message) { return Object.assign(new Error(mes
 export function serialize(row) {
   const out = {};
   for (let [key, value] of Object.entries(row)) {
-    if (['storage_key', 'avatar_storage_key', 'avatar_mime'].includes(key)) continue;
+    if (['storage_key', 'avatar_storage_key', 'avatar_mime', 'next_ticket_number'].includes(key)) continue;
     const field = camel(key);
+    if(field==='ticketTypes'&&typeof value==='string')value=JSON.parse(value);
     if (['active', 'allDay', 'cancelled'].includes(field)) value = Boolean(value);
     if (value && ['createdAt', 'updatedAt', 'deletedAt', 'startAt', 'endAt'].includes(field)) value = new Date(value.replace(' ', 'T') + 'Z').toISOString();
     out[field] = value;
@@ -24,6 +25,8 @@ export async function getRecord(connection, type, id, { deleted = false, lock = 
 }
 export async function decorate(connection, type, rows) {
   const results = rows.map(serialize);
+  if(type==='issues'&&rows.length){const [projects]=await connection.query('SELECT id,project_key FROM projects WHERE id IN (?)',[rows.map(r=>r.project_id)]);for(const row of results)row.ticketKey=projects.find(p=>p.id===row.projectId)?.project_key+'-'+row.ticketNumber;}
+
   for (const [key, [table, owner, column]] of Object.entries(resources[type]?.relations || {})) {
     if (!rows.length) break;
     const [links] = await connection.query(`SELECT ${owner}, ${column} FROM ${table} WHERE ${owner} IN (?) ORDER BY ${column}`, [rows.map(r => r.id)]);
@@ -73,6 +76,23 @@ export async function saveRecord(connection, request, type, body, { id, replace 
   if (old) checkVersion(body, old);
   const [previous] = old ? await decorate(connection, type, [old]) : [{}];
   const values = { ...(old && !replace ? previous : spec.defaults), ...body };
+  let ticketProject;
+  if(type==='projects'){
+    values.projectKey=values.projectKey||old?.project_key||('P'+randomUUID().replaceAll('-','').slice(0,10).toUpperCase());
+    values.ticketTypes=(values.ticketTypes||previous.ticketTypes||['Task','Bug','Subtask']).map(t=>t.trim());
+    if(new Set(values.ticketTypes.map(t=>t.toLowerCase())).size!==values.ticketTypes.length)throw fail(400,'DUPLICATE_TYPES','Ticket type names must be unique.');
+    if(old){
+      const [used]=await connection.execute('SELECT DISTINCT kind FROM issues WHERE project_id=?',[old.id]);
+      if(used.length&&values.projectKey!==old.project_key)throw fail(409,'KEY_IN_USE','Project keys cannot change after tickets have been created.');
+      if(used.some(t=>!values.ticketTypes.includes(t.kind)))throw fail(409,'TYPE_IN_USE','Reassign tickets before renaming or removing their type.');
+    }
+  }
+  if(type==='issues'){
+    if(old&&old.project_id!==values.projectId)throw fail(409,'PROJECT_LOCKED','Numbered tickets stay in their original project.');
+    ticketProject=await getRecord(connection,'projects',values.projectId,{lock:true});
+    const types=typeof ticketProject.ticket_types==='string'?JSON.parse(ticketProject.ticket_types):ticketProject.ticket_types;
+    if(!types.includes(values.kind))throw fail(400,'INVALID_TICKET_TYPE','Choose a ticket type configured for this project.');
+  }
   await validateRecord(connection, type, values);
   if (type === 'issues' && old && old.project_id !== values.projectId) {
     const [attachments] = await connection.execute('SELECT id FROM documents WHERE issue_id=? LIMIT 1 FOR UPDATE', [old.id]);
@@ -87,8 +107,9 @@ export async function saveRecord(connection, request, type, body, { id, replace 
   for (const key of Object.keys(spec.fields)) if (!(key in spec.relations) && values[key] !== undefined) {
     let value = values[key];
     if (value && ['startAt', 'endAt'].includes(key)) value = new Date(value).toISOString().slice(0, 23).replace('T', ' ');
-    columns[snake(key)] = value;
+    columns[snake(key)] = key==='ticketTypes'?JSON.stringify(value):value;
   }
+  if(type==='issues'&&!old){columns.ticket_number=ticketProject.next_ticket_number;await connection.execute('UPDATE projects SET next_ticket_number=next_ticket_number+1 WHERE id=?',[values.projectId]);}
   if (file) Object.assign(columns, file);
   if (type === 'documents' && values.kind === 'note') Object.assign(columns, { storage_key: null, original_name: null, mime_type: null, size_bytes: null });
   const recordId = id || body.id || randomUUID();
