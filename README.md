@@ -193,3 +193,20 @@ provides the same relationships without requiring use of the chart.
 
 Deploy the new `dist/team-map.js` with the updated boot script, tabs, workspace,
 and CSS. No database migration or additional package dependency is required.
+
+### Reference-inspired project overview
+
+The project Overview now uses a dark navigation sidebar, blue-accented task KPI
+cards, a grouped project-plan chart, and right-hand progress, milestone, and team
+panels. Every figure comes from the selected project's saved records. Completion
+is completed task count divided by total task count. At Risk counts open High or
+Critical priority tasks, as explained on the card; Overdue counts open tasks whose
+end date has passed. These categories can overlap and are not added together.
+
+Work packages can be collapsed; task names and bars open the existing ticket
+editor. Milestones and member avatars retain their editing/profile actions.
+Gantt, List, and Board links open the full project-scoped planning views. The blue
+dashed line marks today when it falls inside the displayed schedule. Project
+management navigation remains in the left sidebar. No demo project, budget, or
+member data was added. Deploy `project-overview.js` with the updated boot script,
+workspace, and stylesheet; no database migration is required.

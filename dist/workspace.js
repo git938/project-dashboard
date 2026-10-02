@@ -73,8 +73,7 @@
  function drawProjectDashboard(){
   const project=projects.find(p=>p.id===selected);if(!project){page.innerHTML='<p class="empty">Project not found.</p><button class="secondary" data-all-projects>All projects</button>';return}
   $('#crumb').textContent=ProjectAPI.projectKey(project)+' / Dashboard';
-  page.innerHTML=header(esc(project.name),'Project command center · track delivery and the work ahead.',`<button class="secondary" data-all-projects>All projects</button><button class="secondary" data-refresh-project>Refresh</button><button class="primary" data-project-new-task="${project.id}">+ New task</button>`)+`<div class="pd-switcher"><label for="dashboard-project">Project</label><select id="dashboard-project">${options(projects,project.id)}</select><button class="secondary" data-project-bugs="${project.id}">Bug Tracker</button></div>`+ProjectDashboard.render({project,issues,members,teams,milestones,documents,events},{today:today(),date:shortDate,avatar:profileAvatar});
-  projectShell(project,'overview',page.querySelector('.pd-command'));drawProjectIssueMap();loadProjectActivity(project.id);
+  page.innerHTML=ProjectOverview.render({project,projects,issues,members,teams,milestones,documents,events},{today:today(),date:shortDate,avatar:profileAvatar});renderProjectSidebar(true);
  }
  let projectIssueStatus='all';
  function drawProjectIssues(){const project=projects.find(p=>p.id===selected);if(!project)return;
@@ -97,6 +96,7 @@
  }catch(error){if(requestId===projectActivityRequest&&view==='project'&&selected===id)box.innerHTML=`<p role="alert">${esc(error.message)}</p><button class="text-btn" data-project-activity-refresh>Retry</button>`}}
  page.addEventListener('change',e=>{if(e.target.id==='dashboard-project')openProjectTab(e.target.value,activeProjectTab())});
  page.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.poTeam)openProjectTab(b.dataset.poTeam,'teammap');
   if(b.dataset.projectMapRange){projectTimelineRange=b.dataset.projectMapRange;drawProjectIssueMap()}
   if(b.dataset.projectDashboard)openProjectDashboard(b.dataset.projectDashboard);
   if(b.hasAttribute('data-all-projects')){selected='all';history.replaceState(null,'',location.pathname);open('projects')}
