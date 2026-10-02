@@ -210,3 +210,25 @@ dashed line marks today when it falls inside the displayed schedule. Project
 management navigation remains in the left sidebar. No demo project, budget, or
 member data was added. Deploy `project-overview.js` with the updated boot script,
 workspace, and stylesheet; no database migration is required.
+
+### Portfolio dashboard
+
+Open **Portfolio** in the left navigation or `/#portfolio`. The dashboard shows
+project-health KPIs, status distribution, task-phase completion, current project
+progress, a searchable/filterable project table, upcoming milestones, and recent
+activity. Period buttons select projects whose scheduled dates overlap today
+through the next 7/30/90/180/365 days; All includes every project. They do not
+represent historical snapshots. No historical trends or month-over-month changes
+are fabricated. Team-member counts deduplicate managers, direct members, assigned
+team members, and task owners across the selected projects.
+
+Health categories are exclusive: Completed takes precedence, then overdue project
+end dates, then on-hold projects or overdue/high/critical open tasks, then projects
+without tasks or with future start dates, and finally On Track. The table's Task
+Priority is derived from the highest priority among open tasks. Project links,
+owner profiles, edits, and milestone edits reuse existing workflows. Current
+workspace activity is filtered to the projects in the selected schedule window.
+
+Sidebar hover, active, and keyboard-focus states now retain a dark/blue background
+and white labels. Deploy `portfolio.js` with the updated boot script, workspace,
+and styles. No database migration is required.

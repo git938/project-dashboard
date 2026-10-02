@@ -68,3 +68,13 @@ test('team relationship map deduplicates contributors and isolates project assig
  assert.equal(graph.people.find(p=>p.member.id==='c').inTeam,false);assert.equal(graph.people.find(p=>p.member.id==='c').open,1);
  const empty=model({project:{id:'empty',memberIds:[]},members,issues,teams:[]});assert.equal(empty.people.length,0);assert.equal(empty.tasks.length,0);assert.equal(empty.team,undefined);
 });
+
+test('portfolio health categories, schedule filter and unique contributor counts use current records',async()=>{
+ const sandbox={window:{},Planning:{day:d=>Date.parse(d)/86400000,iso:n=>new Date(n*86400000).toISOString().slice(0,10)}};vm.createContext(sandbox);vm.runInContext(await readFile(new URL('../../dist/portfolio.js',import.meta.url),'utf8'),sandbox);
+ const projects=[['complete','Completed','2026-09-01','2026-09-30'],['late','Active','2026-09-01','2026-09-30'],['risk','Active','2026-09-01','2026-12-01'],['ok','Active','2026-09-01','2026-12-01'],['future','Active','2027-01-01','2027-02-01']].map(([id,status,startDate,endDate])=>({id,name:id,status,startDate,endDate,managerId:'m',memberIds:['m'],teamId:'team'}));
+ const issues=[{projectId:'risk',status:'Todo',endDate:'2026-11-01',priority:'High',assigneeId:'m',phase:'Development'},{projectId:'ok',status:'Todo',endDate:'2026-11-01',priority:'Medium',assigneeId:'n',phase:'Design'}];
+ const data={projects,issues,teams:[{id:'team',memberIds:['m','n']}],members:[{id:'m'},{id:'n'},{id:'unrelated'}],milestones:[],activity:[]};
+ const all=sandbox.window.ProjectPortfolio.model(data,'2026-10-02');assert.equal(all.rows.length,5);assert.equal(all.people.length,2);for(const count of all.counts)assert.equal(count.count,1,count.status);
+ const filtered=sandbox.window.ProjectPortfolio.model(data,'2026-10-02','30');assert.equal(filtered.rows.length,2);assert.equal(filtered.tasks.length,2);assert.equal(filtered.phases.length,2);
+ const empty=sandbox.window.ProjectPortfolio.model({...data,projects:[]},'2026-10-02');assert.equal(empty.rows.length,0);assert.equal(empty.people.length,0);
+});
