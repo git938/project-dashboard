@@ -78,3 +78,14 @@ test('portfolio health categories, schedule filter and unique contributor counts
  const filtered=sandbox.window.ProjectPortfolio.model(data,'2026-10-02','30');assert.equal(filtered.rows.length,2);assert.equal(filtered.tasks.length,2);assert.equal(filtered.phases.length,2);
  const empty=sandbox.window.ProjectPortfolio.model({...data,projects:[]},'2026-10-02');assert.equal(empty.rows.length,0);assert.equal(empty.people.length,0);
 });
+
+test('weekly report uses Monday boundaries, latest saved narrative and real reporting coverage',async()=>{
+ const sandbox={window:{},Planning:{day:d=>Date.parse(d)/86400000,iso:n=>new Date(n*86400000).toISOString().slice(0,10)}};vm.createContext(sandbox);
+ vm.runInContext(await readFile(new URL('../../dist/portfolio.js',import.meta.url),'utf8'),sandbox);sandbox.ProjectPortfolio=sandbox.window.ProjectPortfolio;
+ vm.runInContext(await readFile(new URL('../../dist/weekly-report.js',import.meta.url),'utf8'),sandbox);
+ const w=sandbox.window.WeeklyReport;assert.equal(w.week('2027-01-03'),'2026-12-28');assert.equal(w.week('2027-01-04'),'2027-01-04');
+ const data={projects:[{id:'p',name:'=Example',startDate:'2026-01-01',endDate:'2027-02-01'},{id:'q',name:'Missing',startDate:'2026-01-01',endDate:'2027-02-01'}],issues:[],members:[],teams:[],activity:[],milestones:[]};
+ const reports={p:[{id:'a',date:'2026-12-28',progress:'First'},{id:'b',date:'2027-01-03',progress:'Latest, "quoted"',status:'On track'},{id:'c',date:'2027-01-04',progress:'Next week'}]};
+ const m=w.model(data,reports,'2027-01-03');assert.equal(m.start,'2026-12-28');assert.equal(m.end,'2027-01-03');assert.equal(m.rows[0].report.id,'b');assert.equal(m.rows[1].report,undefined);assert.equal(m.trend[6].count,1);assert.equal(m.trend[5].count,0);
+ const csv=w.csv(data,reports,'2027-01-03','2027-01-05');assert.ok(csv.includes("'=Example"));assert.ok(csv.includes('Latest, ""quoted""'));assert.ok(csv.includes('2027-01-05'));assert.ok(!csv.includes('Next week'));
+});

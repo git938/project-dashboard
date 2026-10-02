@@ -232,3 +232,7 @@ workspace activity is filtered to the projects in the selected schedule window.
 Sidebar hover, active, and keyboard-focus states now retain a dark/blue background
 and white labels. Deploy `portfolio.js` with the updated boot script, workspace,
 and styles. No database migration is required.
+
+### Weekly report dashboard
+
+Open **Weekly Reports** in the sidebar (or `/#weekly`). The page follows the portfolio layout with week navigation, current KPIs, status and priority charts, weekly report coverage, project narratives, milestones, and CSV export. Weeks run Monday–Sunday. The latest report by report date within each week is used per project; missing reports remain explicitly empty. Add or edit narratives under each project's **Status Reports**, setting the report date to the intended week, then return to Weekly Reports. Current completion and health are labelled current; historical completion percentages and week-over-week progress are not fabricated. The seven-week chart counts projects with saved reports. Export includes all projects for the selected week and the current-metrics date, independent of table search/filter. Failed report requests are shown and disable export until retried successfully. This UI reuses existing project-tools API/storage and needs no additional migration.
