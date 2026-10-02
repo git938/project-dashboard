@@ -37,3 +37,11 @@ body>aside nav button:hover,body>aside nav button:focus-visible{background:#304f
 .wr-week{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.wr-week input{border:1px solid #dce7f5;border-radius:6px;padding:9px;color:#23416a;background:white}.wr-trend{width:100%;max-height:200px}.wr-trend text{font:10px system-ui;fill:#45628a}.wr-table{min-width:1100px}.wr-table td{white-space:pre-line;max-width:240px;overflow-wrap:anywhere}.wr-table td small{display:block;margin-top:6px;color:#526d91}.wr-takeaways{display:grid;grid-template-columns:1fr 1fr;gap:24px;padding:18px;border:1px solid #e4edf7;margin-top:14px;border-radius:7px}.wr-takeaways p,.wr-highlight p{font-size:12px;line-height:1.7;color:#405d85;white-space:pre-line;overflow-wrap:anywhere}.wr-highlight{padding:14px 0;border-bottom:1px solid #edf2f9}.wr-quick{display:block;margin:14px 0}.wr-warning{padding:15px;background:#fff3dd;color:#704507;border-radius:8px}@media(max-width:700px){.wr-takeaways{grid-template-columns:1fr}.wr-week{margin-top:12px}}
 /* Locally hosted Font Awesome: inherit foreground color in every state. */
 .fa-solid{font-style:normal;flex-shrink:0}nav button>.fa-solid{width:20px;text-align:center;color:inherit}nav button:hover>.fa-solid,nav button.selected>.fa-solid{color:inherit}.pf-kpi>i .fa-solid{font-size:22px}.pf-heading h1>.fa-solid{font-size:.85em;margin-right:8px}.pf-project-link>i .fa-solid{font-size:14px}
+/* Equal dimensions keep icon backgrounds circular at every viewport size. */
+.pf-kpi>i,.po-kpi>i,.po-project-icon,.pf-project-link>i{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;flex-shrink:0;border-radius:50%;padding:0;line-height:1}
+.pf-kpi>i{width:44px;height:44px;flex-basis:44px}
+.po-kpi>i{width:34px;height:34px;flex-basis:34px}
+.po-project-icon{width:48px;height:48px;flex-basis:48px}
+.pf-project-link>i{width:28px;height:28px;flex-basis:28px}
+.po-kpi>i .fa-solid{font-size:16px;line-height:1;color:inherit}
+@media(max-width:520px){.pf-kpi>i{width:36px;height:36px;flex-basis:36px;padding:0}.pf-kpi>i .fa-solid{font-size:18px}}
