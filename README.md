@@ -174,3 +174,19 @@ the existing task editors and save flows while remaining project-scoped.
 This layout update is frontend-only. Deploy `project-detail.js` together with the
 updated boot script, workspace, planning, tools, and CSS; no migration beyond 007
 is required. Refresh existing browser tabs after deployment.
+
+### Project Team Relationship Map
+
+Each project has a **Team Map** tab (`&tool=teammap`), with a dotted canvas,
+connected cards, zoom in/out, 100%, fit-to-view, background dragging, and keyboard
+panning. Cards come from the project's assigned team, direct project members,
+manager, and task assignees. Members appear once even when they have several roles.
+Solid edges represent assigned-team/team-membership links. Dashed edges represent
+other project contributors; these are not delivery dependency or reporting lines.
+Counts include only that project's tasks. Inactive contributors remain identified.
+Member cards open existing member profiles and history; the team card opens its
+editor, and Manage relationships opens project settings. An expandable table
+provides the same relationships without requiring use of the chart.
+
+Deploy the new `dist/team-map.js` with the updated boot script, tabs, workspace,
+and CSS. No database migration or additional package dependency is required.

@@ -44,12 +44,13 @@
   return panel;
  }
  function openProjectTab(id,key){const keepPosition=selected===id&&['project','project-tools','project-issues','project-planning'].includes(view),position=window.scrollY;const restore=()=>{if(keepPosition){window.scrollTo({top:position,behavior:'instant'});page.querySelector(`[data-project-tool="${key}"]`)?.focus({preventScroll:true})}};selected=id;search='';if(key==='overview'){openProjectDashboard(id);restore();return}
-  if(['gantt','wbs','kanban','timeline'].includes(key)){projectPlanningTab=key;open('project-planning')}
+  if(['gantt','wbs','kanban','timeline','teammap'].includes(key)){projectPlanningTab=key;open('project-planning')}
   else if(key==='issues')open('project-issues');else{projectToolSection=key;open('project-tools')}
   history.replaceState(null,'','#project='+encodeURIComponent(id)+'&tool='+key);restore();
  }
  function drawProjectPlanning(){const project=projects.find(p=>p.id===selected);if(!project)return;PlanningUI.detach();const panel=projectShell(project,projectPlanningTab);
-  if(projectPlanningTab==='timeline'){panel.innerHTML=`<section class="panel pd-issue-map"><div class="panel-heading"><div><h2>Time-Based Issue Map</h2><p>Timeline of this project's scheduled issues</p></div><div class="pd-periods">${['Week','Month','Quarter'].map(range=>`<button data-project-map-range="${range}">${range}</button>`).join('')}</div></div><div id="project-timeline" class="timeline"></div></section>`;drawProjectIssueMap()}
+  if(projectPlanningTab==='teammap'){ProjectTeamMap.mount(panel,{project,teams,members,issues},{avatar:profileAvatar})}
+  else if(projectPlanningTab==='timeline'){panel.innerHTML=`<section class="panel pd-issue-map"><div class="panel-heading"><div><h2>Time-Based Issue Map</h2><p>Timeline of this project's scheduled issues</p></div><div class="pd-periods">${['Week','Month','Quarter'].map(range=>`<button data-project-map-range="${range}">${range}</button>`).join('')}</div></div><div id="project-timeline" class="timeline"></div></section>`;drawProjectIssueMap()}
   else PlanningUI.mount(panel,projectPlanningTab,selected);
  }
  page.addEventListener('keydown',e=>{const b=e.target.closest('[role=tab][data-project-tool]');if(!b||!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();const tabs=[...page.querySelectorAll('[role=tab][data-project-tool]')],i=tabs.indexOf(b),next=e.key==='Home'?0:e.key==='End'?tabs.length-1:(i+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;tabs[next].focus();tabs[next].scrollIntoView({block:'nearest',inline:'nearest'})});
@@ -164,5 +165,5 @@
  const createBefore=openCreate;openCreate=function(type){if(type==='project')editProject();else if(type==='milestone')editMilestone();else if(type==='note')editNote();else if(type==='sprint')PlanningUI.openTask(null,{phase:'Development'});else createBefore(type)};
  document.addEventListener('click',e=>{let b=e.target.closest('[data-detail]');if(b){e.stopImmediatePropagation();openProjectDashboard(b.dataset.detail)}let note=e.target.closest('[data-note-edit]');if(note)editNote(note.dataset.noteEdit);let milestone=e.target.closest('[data-milestone-edit]');if(milestone)editMilestone(milestone.dataset.milestoneEdit)},true);
  renderBefore();updateTeamSummary();
- const openProjectFromHash=()=>{const id=new URLSearchParams(location.hash.slice(1)).get('project');if(id){const tool=new URLSearchParams(location.hash.slice(1)).get('tool');if(['timeline','gantt','wbs','kanban','issues'].includes(tool)){openProjectTab(id,tool)}else if(['charter','plan','reports','risks','budget','resources','communication','changes','raci'].includes(tool)){selected=id;projectToolSection=tool;open('project-tools')}else openProjectDashboard(id)}};window.addEventListener('hashchange',openProjectFromHash);openProjectFromHash();
+ const openProjectFromHash=()=>{const id=new URLSearchParams(location.hash.slice(1)).get('project');if(id){const tool=new URLSearchParams(location.hash.slice(1)).get('tool');if(['timeline','gantt','wbs','kanban','issues','teammap'].includes(tool)){openProjectTab(id,tool)}else if(['charter','plan','reports','risks','budget','resources','communication','changes','raci'].includes(tool)){selected=id;projectToolSection=tool;open('project-tools')}else openProjectDashboard(id)}};window.addEventListener('hashchange',openProjectFromHash);openProjectFromHash();
 })();

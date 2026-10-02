@@ -55,3 +55,16 @@ test('project command center scopes every metric and handles empty projects',asy
  const model=context.window.ProjectDashboard.model(data,'2026-10-06');assert.equal(model.tasks.length,3);assert.equal(model.done,1);assert.equal(model.overdue.length,1);assert.equal(model.dueSoon.length,1);assert.equal(model.progress,33);assert.equal(model.elapsed,50);assert.equal(model.health,'Needs attention');assert.equal(model.people.length,4);assert.equal(model.docs.length,1);assert.equal(model.upcoming.length,1);assert.equal(model.checkpoints.length,1);
  const empty=context.window.ProjectDashboard.model({...data,issues:[]},'2026-09-01');assert.equal(empty.progress,0);assert.equal(empty.elapsed,0);assert.equal(empty.health,'Not started');
 });
+
+test('team relationship map deduplicates contributors and isolates project assignments',async()=>{
+ const sandbox={window:{}};vm.createContext(sandbox);vm.runInContext(await readFile(new URL('../../dist/team-map.js',import.meta.url),'utf8'),sandbox);
+ const model=sandbox.window.ProjectTeamMap.model;
+ const project={id:'p',teamId:'team',managerId:'a',memberIds:['a','b']};
+ const members=['a','b','c','outside'].map(id=>({id,name:id,active:true}));
+ const issues=[{projectId:'p',assigneeId:'a',status:'Done'},{projectId:'p',assigneeId:'c',status:'Todo'},{projectId:'p',assigneeId:null,status:'Todo'},{projectId:'other',assigneeId:'outside',status:'Todo'}];
+ const graph=model({project,members,issues,teams:[{id:'team',name:'Team',memberIds:['a']},{id:'other',memberIds:['outside']}]});
+ assert.equal(graph.people.length,3);assert.equal(graph.unassigned,1);assert.equal(graph.tasks.length,3);
+ const manager=graph.people.find(p=>p.member.id==='a');assert.equal(manager.open,0);assert.equal(manager.total,1);assert.equal(manager.roles.length,4);assert.equal(manager.inTeam,true);
+ assert.equal(graph.people.find(p=>p.member.id==='c').inTeam,false);assert.equal(graph.people.find(p=>p.member.id==='c').open,1);
+ const empty=model({project:{id:'empty',memberIds:[]},members,issues,teams:[]});assert.equal(empty.people.length,0);assert.equal(empty.tasks.length,0);assert.equal(empty.team,undefined);
+});

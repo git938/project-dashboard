@@ -2,7 +2,7 @@
 window.ProjectTools=(()=>{
  let definitionsPromise;
  const definitions=()=>definitionsPromise||(definitionsPromise=fetch('/project-tools-config.json').then(r=>{if(!r.ok)throw Error('Could not load project tools');return r.json()}).catch(e=>{definitionsPromise=null;throw e}));
- const titles={overview:'Overview',timeline:'Timeline',issues:'Issues',wbs:'WBS',kanban:'Board',gantt:'Gantt',charter:'Charter',plan:'Project Plan',reports:'Status Reports',risks:'Risks',budget:'Budget',resources:'Resources',communication:'Communication',changes:'Change Log',raci:'RACI Matrix'};
+ const titles={overview:'Overview',teammap:'Team Map',timeline:'Timeline',issues:'Issues',wbs:'WBS',kanban:'Board',gantt:'Gantt',charter:'Charter',plan:'Project Plan',reports:'Status Reports',risks:'Risks',budget:'Budget',resources:'Resources',communication:'Communication',changes:'Change Log',raci:'RACI Matrix'};
  function navigation(id,active='overview'){return `<div class="project-tab-nav"><button class="tab-scroll" data-tab-scroll="-1" aria-label="Scroll project tabs left">‹</button><div class="project-tabs" role="tablist" aria-label="Project sections">${Object.entries(titles).map(([key,title])=>`<button type="button" role="tab" id="project-tab-${key}" aria-controls="project-tab-panel" aria-selected="${key===active}" tabindex="${key===active?'0':'-1'}" data-project-tool="${key}" data-tool-project="${esc(id)}">${title}</button>`).join('')}</div><button class="tab-scroll" data-tab-scroll="1" aria-label="Scroll project tabs right">›</button></div>`}
  async function mount(container,context,initial='charter'){
   const {project,members,tasks,avatar}=context;
