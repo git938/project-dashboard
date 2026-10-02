@@ -160,24 +160,27 @@ Migration 007 creates the new table without replacing existing data. Ship the ne
 `project-tools.js` and `project-tools-config.json` together with `boot.js` and the
 remaining frontend changes. Refresh browser tabs after deployment. Do not seed production.
 
-### Single-project detail layout
+### Single-project detail layout and sidebar
 
-The project dashboard uses a shared project header, summary, brief, file links, and
-status/member sidebar. A horizontal tab bar switches Overview, Timeline, Issues,
-WBS, Board, Gantt, and the nine management sections inside that project page.
-The project selector preserves the current tab. Tab URLs use
-`#project=<internal-id>&tool=<section>` and survive refresh; keyboard users can
-move between tab buttons with Left/Right/Home/End and activate with Enter/Space.
-Tab arrows expose additional sections on narrow screens. Gantt/WBS/Board reuse
-the existing task editors and save flows while remaining project-scoped.
+Projects are listed underneath Projects in the left navigation. Each expandable
+project has its own Overview, Team Map, Timeline, Issues, WBS, Board, Gantt,
+Charter, Project Plan, Status Reports, Risks, Budget, Resources, Communication,
+Change Log, and RACI entries. Horizontal project tabs have been removed.
 
-This layout update is frontend-only. Deploy `project-detail.js` together with the
-updated boot script, workspace, planning, tools, and CSS; no migration beyond 007
-is required. Refresh existing browser tabs after deployment.
+Clicking a project name opens its overview; the separate disclosure button expands
+or collapses its sections. The current project and section are highlighted. The
+sidebar scrolls independently. Project URLs continue to use
+`#project=<internal-id>&tool=<section>` and survive refresh. The active project's
+sections expand when opened through a saved link. Existing records and editing
+flows remain project-scoped; the common project header and status sidebar remain.
+
+This navigation update is frontend-only. Deploy the updated project detail,
+workspace, project tools, and CSS together. No additional database migration is
+required. Refresh existing browser tabs after deployment.
 
 ### Project Team Relationship Map
 
-Each project has a **Team Map** tab (`&tool=teammap`), with a dotted canvas,
+Each project has a **Team Map** sidebar item (`&tool=teammap`), with a dotted canvas,
 connected cards, zoom in/out, 100%, fit-to-view, background dragging, and keyboard
 panning. Cards come from the project's assigned team, direct project members,
 manager, and task assignees. Members appear once even when they have several roles.
