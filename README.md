@@ -246,3 +246,7 @@ Each project's **Project Charter** entry opens a styled document with purpose (p
 ### Risk Management dashboard
 
 Open **Risk Management** in the sidebar or `/#risks`. This aggregates each project's existing risk register, with project/status/owner/level filters, text search, ten-row pagination, risk distribution, counts by project, an assessment matrix, and review dates. Add Risk selects a project and opens its existing versioned register editor; close Back to Risk Management to refresh the overview. Levels use likelihood × impact (Low=1, Medium=2, High=3): scores 1–2 Low, 3–4 Medium, 6–9 High. Counts include Closed unless filtered. No categories, numeric probabilities, historical trends, or sample risk records are invented. No migration or backend restart is required for this feature.
+
+### Settings
+
+`/#settings` provides device-local preferences (date locale/format, default landing view, risk page size, density and reduced motion), shared member-profile editing, and a JSON workspace export including project-tool registers. Preferences use browser localStorage and do not sync between devices or server origins. Date localization applies to workspace date labels, not full UI translation. Export excludes uploaded file contents and is not a database backup. Notifications, authentication management, external integrations, billing and role-based permissions are explicitly shown as unavailable rather than simulated. No database migration required.
