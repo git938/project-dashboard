@@ -17,3 +17,98 @@
 :is(#timeline,#project-timeline) .bar.green{background:#edf7ef;border-color:#c9e2cf}:is(#timeline,#project-timeline) .bar.gray{background:#f1f2f5;border-color:#d9dce3}
 
 :is(#timeline,#project-timeline) .bar .task-avatar{display:inline-grid;width:22px;height:22px;min-width:22px;flex-shrink:0;object-fit:cover;border-radius:50%;place-items:center;background:#ffffffb3;font-size:9px}
+
+/* ---------------------------------------------------------------------------
+   Project timeline: show the FULL task name next to its avatar, as one pill.
+   Before: the bar was overflow:hidden and the label was ellipsised, so only
+   ~33px of the name were visible. The bar keeps its true Gantt width, but the
+   label now grows to fit the whole name and its border box is made to coincide
+   exactly with the bar's, so fill + outline stay continuous instead of the text
+   spilling onto the white row background. Colours are inherited from the bar,
+   so every status colour (gray/blue/yellow/purple/green) works unchanged.
+   --------------------------------------------------------------------------- */
+:is(#timeline,#project-timeline) .bar,
+:is(#timeline,#project-timeline) .track,
+:is(#timeline,#project-timeline) .issue-row,
+:is(#timeline,#project-timeline) .timeline-rows{overflow:visible}
+:is(#timeline,#project-timeline) .timeline-task-name,
+:is(#timeline,#project-timeline) .timeline-task-name small{overflow:visible;text-overflow:clip;white-space:nowrap}
+
+:is(#timeline,#project-timeline) .timeline-task-name{
+  /* width:max-content matters: a CSS background only paints the element's box,
+     never text that overflows it. */
+  width:max-content;max-width:none;flex:0 0 auto;
+  background-color:inherit;border:1px solid;border-color:inherit;border-radius:7px;
+  /* Negative margins cancel the bar's padding+border (6px+1px) and reach back
+     over the avatar slot (22px + 6px gap), so the two border boxes coincide and
+     paint a single continuous outline instead of a nested double box. */
+  margin:-7px -7px -7px -35px;padding:2px 10px 2px 34px;
+  align-self:stretch;display:flex;flex-direction:column;justify-content:center}
+/* Keep the avatar painted above the label's background. */
+:is(#timeline,#project-timeline) .bar .task-avatar{position:relative;z-index:1}
+/* Room on the right so the longest label stays reachable by scrolling. */
+:is(#timeline,#project-timeline) .map-canvas{box-sizing:content-box;padding-right:140px}
+
+/* ---------------------------------------------------------------------------
+   Duration end marker. The pill's length follows the task name, so mark where
+   the bar's real (Gantt) duration stops. Painted above the label via z-index.
+   --------------------------------------------------------------------------- */
+:is(#timeline,#project-timeline) .bar::after,
+.gantt-bar::after{content:'';position:absolute;top:-1px;bottom:-1px;right:-1px;width:2px;
+  background:currentColor;opacity:.35;border-radius:1px;z-index:2}
+
+/* ---------------------------------------------------------------------------
+   Gantt chart: same pill treatment as the project timeline. Geometry differs:
+   the bar is 29px tall, its effective padding is 3px 6px (a later .gantt-bar rule
+   wins over the 5px 8px one), the avatar is 20px and the gap 6px, so the
+   offsets below cancel those instead of the timeline's 6px/22px ones.
+   --------------------------------------------------------------------------- */
+.gantt-bar{overflow:visible}
+.gantt-task-name,.gantt-bar{white-space:nowrap;text-overflow:clip}
+.gantt-task-name{
+  width:max-content;max-width:none;flex:0 0 auto;
+  background-color:inherit;border:1px solid;border-color:inherit;border-radius:5px;
+  margin:-4px -7px -4px -33px;padding:1px 10px 1px 32px;
+  align-self:stretch;display:flex;align-items:center}
+.gantt-bar .task-avatar{position:relative;z-index:1}
+
+/* ---------------------------------------------------------------------------
+   Duration end marker: switch. Markup lives in index.html's toolbar and the
+   behaviour in ui-toggles.js. Hiding is driven by a class on <html> so it keeps
+   working after the app re-renders a panel's innerHTML.
+   --------------------------------------------------------------------------- */
+.tick-switch{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:#4b4b55;
+  cursor:pointer;user-select:none;white-space:nowrap}
+.tick-switch input{-webkit-appearance:none;appearance:none;width:32px;height:18px;margin:0;
+  border:0;border-radius:9px;background:#d5d7de;position:relative;cursor:pointer;
+  transition:background .16s;flex-shrink:0}
+.tick-switch input:checked{background:#3fbf6a}
+.tick-switch input::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;
+  border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .16s}
+.tick-switch input:checked::after{transform:translateX(14px)}
+html.no-duration-tick :is(#timeline,#project-timeline) .bar::after,
+html.no-duration-tick .gantt-bar::after{display:none}
+
+/* ---------------------------------------------------------------------------
+   Per-task progress. Shown three ways: a slider in the task editor, a mini
+   meter on kanban cards, and shading inside a task's bar/pill. The bar fill's
+   width is a percentage of the bar element itself, which is why no extra maths
+   is needed -- it is correct whether the bar's own width is a % (timeline) or
+   px (Gantt).
+   --------------------------------------------------------------------------- */
+.progress-field{display:flex;align-items:center;gap:10px}
+.progress-field input[type=range]{flex:1;min-width:110px;margin:0;accent-color:#929bc5}
+.progress-field output{font-size:12px;color:#4b4b55;min-width:40px;text-align:right;font-variant-numeric:tabular-nums}
+.card-progress{display:flex;align-items:center;gap:8px;margin:0 0 10px;color:#4b4b55}
+.card-progress .progress-track{flex:1;width:auto}
+.card-progress small{font-size:11px;min-width:34px;text-align:right;font-variant-numeric:tabular-nums}
+:is(#timeline,#project-timeline) .bar-progress,
+.gantt-bar .bar-progress{position:absolute;left:0;top:0;bottom:0;background:currentColor;
+  opacity:.13;pointer-events:none;z-index:2}
+:is(#timeline,#project-timeline) .bar-progress{border-radius:7px 0 0 7px}
+.gantt-bar .bar-progress{border-radius:5px 0 0 5px}
+/* Keep the avatar and the duration tick painted above the progress shading. */
+:is(#timeline,#project-timeline) .bar .task-avatar,
+.gantt-bar .task-avatar{z-index:3}
+:is(#timeline,#project-timeline) .bar::after,
+.gantt-bar::after{z-index:4}

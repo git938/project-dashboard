@@ -1401,6 +1401,11 @@
                             "minimum": 0,
                             "maximum": 1000000
                           },
+                          "progress": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 100
+                          },
                           "id": {
                             "type": "string",
                             "minLength": 1,
@@ -1550,6 +1555,11 @@
                     "minimum": 0,
                     "maximum": 1000000
                   },
+                  "progress": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
                   "id": {
                     "type": "string",
                     "minLength": 1,
@@ -1649,6 +1659,11 @@
                           "type": "integer",
                           "minimum": 0,
                           "maximum": 1000000
+                        },
+                        "progress": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 100
                         },
                         "id": {
                           "type": "string",
@@ -1794,6 +1809,11 @@
                           "minimum": 0,
                           "maximum": 1000000
                         },
+                        "progress": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 100
+                        },
                         "id": {
                           "type": "string",
                           "minLength": 1,
@@ -1923,6 +1943,11 @@
                     "minimum": 0,
                     "maximum": 1000000
                   },
+                  "progress": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
                   "version": {
                     "type": "integer",
                     "minimum": 1
@@ -2029,6 +2054,11 @@
                           "type": "integer",
                           "minimum": 0,
                           "maximum": 1000000
+                        },
+                        "progress": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 100
                         },
                         "id": {
                           "type": "string",
@@ -2154,6 +2184,11 @@
                     "minimum": 0,
                     "maximum": 1000000
                   },
+                  "progress": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
                   "version": {
                     "type": "integer",
                     "minimum": 1
@@ -2260,6 +2295,11 @@
                           "type": "integer",
                           "minimum": 0,
                           "maximum": 1000000
+                        },
+                        "progress": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 100
                         },
                         "id": {
                           "type": "string",

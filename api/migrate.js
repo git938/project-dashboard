@@ -62,5 +62,12 @@ try {
   const toolsSql=(await readFile(path.join(root,'db/migrations/007_project_tools.sql'),'utf8')).replace('project_id VARCHAR(64) NOT NULL',`project_id VARCHAR(64) CHARACTER SET ${projectIdColumn.charsetName} COLLATE ${projectIdColumn.collationName} NOT NULL`);
   await c.query(toolsSql);
   await c.query("INSERT IGNORE INTO schema_migrations(version) VALUES ('007_project_tools')");
+  const [progressMigration]=await c.query("SELECT version FROM schema_migrations WHERE version='008_issue_progress'");
+  if(!progressMigration.length){
+    const [columns]=await c.query('SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=? AND TABLE_NAME=? AND COLUMN_NAME=?',[config.db.database,'issues','progress']);
+    if(!columns.length) await c.query('ALTER TABLE issues ADD COLUMN progress TINYINT UNSIGNED NOT NULL DEFAULT 0, ADD CONSTRAINT issues_progress_range CHECK (progress <= 100)');
+    await c.query("UPDATE issues SET progress=100 WHERE status='Done'");
+    await c.query("INSERT INTO schema_migrations(version) VALUES ('008_issue_progress')");
+  }
   console.log('Database migrations complete. No seed data was loaded.');
 } finally { await c.query("SELECT RELEASE_LOCK('project_dashboard_migrations')").catch(()=>{}); await c.end(); }
