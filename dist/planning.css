@@ -71,3 +71,20 @@
   margin:-4px -7px -4px -33px;padding:1px 10px 1px 32px;
   align-self:stretch;display:flex;align-items:center}
 .gantt-bar .task-avatar{position:relative;z-index:1}
+
+/* ---------------------------------------------------------------------------
+   Duration end marker: switch. Markup lives in index.html's toolbar and the
+   behaviour in ui-toggles.js. Hiding is driven by a class on <html> so it keeps
+   working after the app re-renders a panel's innerHTML.
+   --------------------------------------------------------------------------- */
+.tick-switch{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:#4b4b55;
+  cursor:pointer;user-select:none;white-space:nowrap}
+.tick-switch input{-webkit-appearance:none;appearance:none;width:32px;height:18px;margin:0;
+  border:0;border-radius:9px;background:#d5d7de;position:relative;cursor:pointer;
+  transition:background .16s;flex-shrink:0}
+.tick-switch input:checked{background:#3fbf6a}
+.tick-switch input::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;
+  border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .16s}
+.tick-switch input:checked::after{transform:translateX(14px)}
+html.no-duration-tick :is(#timeline,#project-timeline) .bar::after,
+html.no-duration-tick .gantt-bar::after{display:none}
