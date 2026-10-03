@@ -89,3 +89,9 @@ test('weekly report uses Monday boundaries, latest saved narrative and real repo
  const m=w.model(data,reports,'2027-01-03');assert.equal(m.start,'2026-12-28');assert.equal(m.end,'2027-01-03');assert.equal(m.rows[0].report.id,'b');assert.equal(m.rows[1].report,undefined);assert.equal(m.trend[6].count,1);assert.equal(m.trend[5].count,0);
  const csv=w.csv(data,reports,'2027-01-03','2027-01-05');assert.ok(csv.includes("'=Example"));assert.ok(csv.includes('Latest, ""quoted""'));assert.ok(csv.includes('2027-01-05'));assert.ok(!csv.includes('Next week'));
 });
+
+test('risk assessment consistently scores all likelihood and impact combinations',async()=>{
+ const sandbox={window:{}};vm.createContext(sandbox);vm.runInContext(await readFile(new URL('../../dist/risk-management.js',import.meta.url),'utf8'),sandbox);
+ const score=sandbox.window.RiskManagement.level;
+ for(const [likelihood,impact,expected] of [['Low','Low','Low'],['Low','Medium','Low'],['Low','High','Medium'],['Medium','Low','Low'],['Medium','Medium','Medium'],['Medium','High','High'],['High','Low','Medium'],['High','Medium','High'],['High','High','High']])assert.equal(score({likelihood,impact}),expected);
+});

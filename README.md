@@ -242,3 +242,7 @@ Icons use locally bundled Font Awesome Free 6.7.2 (Classic Solid), following the
 ### Project Charter
 
 Each project's **Project Charter** entry opens a styled document with purpose (project description), objectives, in/out scope, deliverables (one per line), constraints, approval, project information, and stakeholders. Create/Edit uses the existing versioned project-tools API. Print / Save PDF opens the browser print dialog. Existing charter data is preserved and blank fields are shown explicitly; no sample charter content is inserted. No additional database migration is required.
+
+### Risk Management dashboard
+
+Open **Risk Management** in the sidebar or `/#risks`. This aggregates each project's existing risk register, with project/status/owner/level filters, text search, ten-row pagination, risk distribution, counts by project, an assessment matrix, and review dates. Add Risk selects a project and opens its existing versioned register editor; close Back to Risk Management to refresh the overview. Levels use likelihood × impact (Low=1, Medium=2, High=3): scores 1–2 Low, 3–4 Medium, 6–9 High. Counts include Closed unless filtered. No categories, numeric probabilities, historical trends, or sample risk records are invented. No migration or backend restart is required for this feature.
