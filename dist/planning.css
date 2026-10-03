@@ -48,3 +48,26 @@
 :is(#timeline,#project-timeline) .bar .task-avatar{position:relative;z-index:1}
 /* Room on the right so the longest label stays reachable by scrolling. */
 :is(#timeline,#project-timeline) .map-canvas{box-sizing:content-box;padding-right:140px}
+
+/* ---------------------------------------------------------------------------
+   Duration end marker. The pill's length follows the task name, so mark where
+   the bar's real (Gantt) duration stops. Painted above the label via z-index.
+   --------------------------------------------------------------------------- */
+:is(#timeline,#project-timeline) .bar::after,
+.gantt-bar::after{content:'';position:absolute;top:-1px;bottom:-1px;right:-1px;width:2px;
+  background:currentColor;opacity:.35;border-radius:1px;z-index:2}
+
+/* ---------------------------------------------------------------------------
+   Gantt chart: same pill treatment as the project timeline. Geometry differs:
+   the bar is 29px tall, its effective padding is 3px 6px (a later .gantt-bar rule
+   wins over the 5px 8px one), the avatar is 20px and the gap 6px, so the
+   offsets below cancel those instead of the timeline's 6px/22px ones.
+   --------------------------------------------------------------------------- */
+.gantt-bar{overflow:visible}
+.gantt-task-name,.gantt-bar{white-space:nowrap;text-overflow:clip}
+.gantt-task-name{
+  width:max-content;max-width:none;flex:0 0 auto;
+  background-color:inherit;border:1px solid;border-color:inherit;border-radius:5px;
+  margin:-4px -7px -4px -33px;padding:1px 10px 1px 32px;
+  align-self:stretch;display:flex;align-items:center}
+.gantt-bar .task-avatar{position:relative;z-index:1}
