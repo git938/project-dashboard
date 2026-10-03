@@ -6,7 +6,7 @@ window.ProjectPortfolio=(()=>{
   const rows=projects.map(project=>{const tasks=data.issues.filter(t=>t.projectId===project.id),open=tasks.filter(t=>t.status!=='Done'),done=tasks.length-open.length;
    const status=project.status==='Completed'||tasks.length&&done===tasks.length?'Completed':project.endDate<today?'Overdue':project.status==='On hold'||open.some(t=>t.endDate<today||['High','Critical'].includes(t.priority))?'At Risk':!tasks.length||project.startDate>today?'Not Started':'On Track';
    const priority=['Critical','High','Medium','Low'].find(priority=>open.some(t=>t.priority===priority))||'—';
-   return {project,tasks,done,open,status,priority,progress:tasks.length?Math.round(done/tasks.length*100):0};
+   return {project,tasks,done,open,status,priority,progress:Planning.progress(tasks)};
   });
   const ids=new Set(projects.map(p=>p.id)),tasks=data.issues.filter(t=>ids.has(t.projectId)),memberIds=new Set();
   for(const p of projects){if(p.managerId)memberIds.add(p.managerId);for(const id of p.memberIds||[])memberIds.add(id);for(const id of data.teams.find(t=>t.id===p.teamId)?.memberIds||[])memberIds.add(id)}for(const t of tasks)if(t.assigneeId)memberIds.add(t.assigneeId);

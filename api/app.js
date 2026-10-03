@@ -35,7 +35,7 @@ export async function buildApp({ pool, settings = config, logger = true } = {}) 
   });
   app.get('/api/health', { schema: { tags: ['operations'] } }, async () => ({ status: 'ok' }));
   app.get('/api/ready', { schema: { tags: ['operations'] } }, async (req, reply) => {
-    try { await app.db.query('SELECT version,kind,priority,ticket_number FROM issues LIMIT 0'); await app.db.query('SELECT issue_id FROM documents LIMIT 0'); await app.db.query('SELECT project_key,ticket_types FROM projects LIMIT 0'); await app.db.query('SELECT id FROM member_task_history LIMIT 0'); await app.db.query('SELECT project_id FROM project_tools LIMIT 0'); return { status: 'ready' }; }
+    try { await app.db.query('SELECT version,kind,priority,ticket_number,progress FROM issues LIMIT 0'); await app.db.query('SELECT issue_id FROM documents LIMIT 0'); await app.db.query('SELECT project_key,ticket_types FROM projects LIMIT 0'); await app.db.query('SELECT id FROM member_task_history LIMIT 0'); await app.db.query('SELECT project_id FROM project_tools LIMIT 0'); return { status: 'ready' }; }
     catch { return reply.code(503).send({ status: 'not_ready' }); }
   });
   await app.register(resourceRoutes);
