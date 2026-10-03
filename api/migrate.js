@@ -69,5 +69,17 @@ try {
     await c.query("UPDATE issues SET progress=100 WHERE status='Done'");
     await c.query("INSERT INTO schema_migrations(version) VALUES ('008_issue_progress')");
   }
+  const [ticketEditorMigration]=await c.query("SELECT version FROM schema_migrations WHERE version='009_ticket_editor'");
+  if(!ticketEditorMigration.length){
+    const editorSql=await readFile(path.join(root,'db/migrations/009_ticket_editor.sql'),'utf8');
+    await c.query(editorSql);
+    await c.query("INSERT INTO schema_migrations(version) VALUES ('009_ticket_editor')");
+  }
+  const [estimateMigration]=await c.query("SELECT version FROM schema_migrations WHERE version='010_issue_estimate'");
+  if(!estimateMigration.length){
+    const [columns]=await c.query('SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=? AND TABLE_NAME=? AND COLUMN_NAME=?',[config.db.database,'issues','estimate_minutes']);
+    if(!columns.length) await c.query(await readFile(path.join(root,'db/migrations/010_issue_estimate.sql'),'utf8'));
+    await c.query("INSERT INTO schema_migrations(version) VALUES ('010_issue_estimate')");
+  }
   console.log('Database migrations complete. No seed data was loaded.');
 } finally { await c.query("SELECT RELEASE_LOCK('project_dashboard_migrations')").catch(()=>{}); await c.end(); }

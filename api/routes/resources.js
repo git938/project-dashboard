@@ -63,6 +63,10 @@ export async function resourceRoutes(app) {
           }
           for (const table of ['team_members', 'project_members', 'event_attendees']) await c.execute(`DELETE FROM ${table} WHERE member_id=?`, [row.id]);
         }
+        if (type === 'issues') for (const table of ['comments', 'time_entries']) await c.execute(`DELETE FROM ${table} WHERE issue_id=?`, [row.id]);
+        if (type === 'issues') { await c.execute('DELETE FROM issue_labels WHERE issue_id=?', [row.id]); await c.execute('DELETE FROM issue_links WHERE from_issue_id=? OR to_issue_id=?', [row.id, row.id]); }
+        if (type === 'labels') await c.execute('DELETE FROM issue_labels WHERE label_id=?', [row.id]);
+        if (type === 'projects') for (const table of ['comments', 'time_entries']) await c.execute(`DELETE FROM ${table} WHERE issue_id IN (SELECT id FROM issues WHERE project_id=?)`, [row.id]);
         await c.execute(`UPDATE ${type} SET deleted_at=UTC_TIMESTAMP(3),version=version+1 WHERE id=?`, [row.id]);
         await audit(c, request, type, row, 'deleted');
       });
