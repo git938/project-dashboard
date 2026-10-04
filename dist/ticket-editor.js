@@ -44,7 +44,7 @@
       state = res.data;
       state.timeTracking.estimateMinutes = state.timeTracking.estimateMinutes == null ? '' : state.timeTracking.estimateMinutes;
       tab = 'details';
-      render();
+      root.innerHTML='';render();
     } catch (err) {
       root.innerHTML = `<div class="te-shell"><div class="te-error"><p>${esc(err.message)}</p><button class="te-btn" data-te-close>Close</button></div></div>`;
     }
@@ -54,6 +54,7 @@
   function badge(tone, text) { return `<span class="te-badge te-${esc(tone)}">${esc(text)}</span>`; }
 
   function render() {
+    captureDraft();
     const d = state;
     const key = d.ticketKey || d.id;
     const labels = (d.labels || []).map(l => `<span class="te-label" style="--te-label:${esc(l.color)}">${esc(l.name)}<button type="button" class="te-label-x" data-te-remove-label="${esc(l.id)}" aria-label="Remove ${esc(l.name)}">×</button></span>`).join('');
@@ -90,9 +91,10 @@
           </nav>
           <div class="te-tabpane">${pane(d, memberOptions)}</div>
         </div>
-        <aside class="te-rail">${rail(d)}</aside>
+        <div class="te-rail">${rail(d)}</div>
       </div>
     </div>`;
+    const description=root.querySelector('[data-te-field=description]');if(description)TicketRichText.mount(description);
   }
   function tabBtn(id, label, count) {
     return `<button type="button" class="te-tab ${tab === id ? 'is-active' : ''}" data-te-tab="${id}">${esc(label)}${count != null ? ` <span class="te-tab-count">${count}</span>` : ''}</button>`;
@@ -129,7 +131,7 @@
     </div>
     <label class="te-field te-block"><span>Description *</span>
       <textarea data-te-field="description" rows="10" placeholder="Describe the issue…">${esc(d.description || '')}</textarea>
-      <small class="te-hint"><span data-te-wordcount>${words}</span> words · use plain text</small>
+      <small class="te-hint"><span data-te-wordcount>${words}</span> words</small>
     </label>`;
   }
 
@@ -200,7 +202,9 @@
   }
 
   // ---- interactions ----
+  function captureDraft(){if(!state||!root)return;root.querySelectorAll('[data-te-field]').forEach(el=>{const key=el.dataset.teField;state[key]=el.value===''&&key==='assigneeId'?null:el.value})}
   function onClick(e) {
+    captureDraft();
     const t = e.target;
     const tabBtnEl = t.closest('[data-te-tab]');
     if (tabBtnEl) { tab = tabBtnEl.dataset.teTab; render(); return; }
@@ -218,7 +222,7 @@
   function onInput(e) {
     if (e.target.matches('[data-te-field="description"]')) {
       const wc = root.querySelector('[data-te-wordcount]');
-      const v = e.target.value.trim();
+      const v = e.target._rich?.querySelector('.rich-body').textContent.trim()||e.target.value.trim();
       if (wc) wc.textContent = v ? v.split(/\s+/).length : 0;
     }
   }
@@ -243,9 +247,10 @@
     if (busy) return; busy = true;
     const get = n => root.querySelector(`[data-te-field="${n}"]`);
     try {
-      const body = { version: state.version };
+      captureDraft();const body = { version: state.version };
+      for(const n of ['name','priority','status','assigneeId','description','endDate'])body[n]=state[n];
       for (const n of ['name', 'priority', 'status', 'assigneeId', 'description', 'endDate']) { const el = get(n); if (el) body[n] = el.value === '' && n === 'assigneeId' ? null : el.value; }
-      const phase = get('phase'); if (phase) body.phase = phase.value || null;
+      body.phase = state.phase || null;
       const labelInput = root.querySelector('[data-te-label-input]');
       if (labelInput && labelInput.value.trim()) {
         const name = labelInput.value.trim();
@@ -268,12 +273,14 @@
   async function refresh() {
     const res = await api('/api/issues/' + encodeURIComponent(state.id) + '/detail');
     state = res.data;
+    root.innerHTML='';
     state.timeTracking.estimateMinutes = state.timeTracking.estimateMinutes == null ? '' : state.timeTracking.estimateMinutes;
     render();
     applyToBootstrap();
   }
 
   function applyToBootstrap() {
+    window.Workspace?.acceptTicket?.(state);
     const B = window.Bootstrap; if (!B || !Array.isArray(B.issues)) return;
     const row = B.issues.find(i => i.id === state.id);
     if (row) Object.assign(row, { name: state.name, status: state.status, priority: state.priority, assigneeId: state.assigneeId, description: state.description, endDate: state.endDate, phase: state.phase, progress: state.progress });

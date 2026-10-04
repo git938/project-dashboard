@@ -74,5 +74,5 @@ window.ProjectAPI = (() => {
   async function file(id){const response=await fetch(`/api/documents/${id}/download`);if(!response.ok)throw Error('Could not download the document.');return response.blob();}
   const ticketKey=t=>cache.issues.get(t.id)?.ticketKey||t.ticketKey||'Pending number';
   const projectKey=p=>cache.projects.get(p.id)?.projectKey||p.projectKey||'';
-  return {ticketKey,projectKey,load,save,file,request,uploadTicketImage,toUI,utc,projectPeople,assigneeInitials};
+  return {acceptIssue(row){cache.issues.set(row.id,{...row});baseline.issues.set(row.id,payload('issues',row,window.Bootstrap));},ticketKey,projectKey,load,save,file,request,uploadTicketImage,toUI,utc,projectPeople,assigneeInitials};
 })();

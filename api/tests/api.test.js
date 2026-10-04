@@ -161,3 +161,14 @@ test('project tools persist independently, reject stale saves and validate membe
  assert.ok(activity.some(a=>a.entityType==='project_tools'));
  await pool.execute('DELETE FROM activity WHERE project_id IN (?,?)',[project.id,other.id]);
 });
+
+test('rich ticket descriptions survive create, update and detail reload',async()=>{
+ const project=await create('projects',{name:'Rich description regression',startDate:'2026-10-01',endDate:'2026-10-31'});
+ const original='Legacy plain text <not markup>';
+ const issue=await create('issues',{projectId:project.id,name:'Rich editor roundtrip',description:original,startDate:'2026-10-01',endDate:'2026-10-02'});
+ assert.equal(json(await call('GET',`/api/issues/${issue.id}/detail`)).data.description,original);
+ const description='<!--project-rich-text:v1--><h2>Overview</h2><p><strong>Formatted</strong> description</p><ol><li>First step</li></ol>';
+ const result=await call('PATCH',`/api/issues/${issue.id}`,{version:issue.version,description});
+ assert.equal(result.statusCode,200,result.body);
+ assert.equal(json(await call('GET',`/api/issues/${issue.id}/detail`)).data.description,description);
+});

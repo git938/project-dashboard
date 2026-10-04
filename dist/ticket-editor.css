@@ -99,3 +99,4 @@ body.te-open { overflow: hidden; }
 .te-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px); background: #17171d; color: #fff; padding: 11px 20px; border-radius: 10px; font-size: 13px; opacity: 0; transition: all .2s; z-index: 500; }
 .te-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 @media (max-width: 900px) { .te-body { grid-template-columns: 1fr; } .te-rail { border-left: 0; border-top: 1px solid #ececf1; } .te-grid { grid-template-columns: 1fr; } }
+.te-overlay{background:#142d53bb}.te-head{background:#f6faff}.te-title,.te-field>span{color:#153763}.te-btn.te-primary{background:#1678ff;border-color:#1678ff}.te-tab.is-active{color:#1678ff;border-bottom-color:#1678ff}.te-rail{position:static;width:auto;height:auto;box-sizing:border-box}.te-block:has(.ticket-rich){display:block}.te-hint:has([data-te-wordcount]){display:none}
