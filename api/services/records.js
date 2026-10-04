@@ -36,7 +36,16 @@ export async function decorate(connection, type, rows) {
 }
 export async function audit(connection, request, type, row, action, before = null) {
   const actor = String(request.headers['x-authenticated-user'] || 'local').slice(0, 160);
-  const project = type === 'projects' ? row.id : row.project_id || null;
+  let project = type === 'projects' ? row.id : row.project_id || null;
+  const ticketId = row.issue_id || (type === 'issue_links' ? row.from_issue_id : null);
+  if (ticketId) {
+    const [[ticket]] = await connection.execute('SELECT project_id FROM issues WHERE id=?', [ticketId]);
+    project = ticket?.project_id || project;
+    await connection.execute('INSERT INTO activity (project_id,actor,action,entity_type,entity_id,summary) VALUES (?,?,?,?,?,?)',
+      [project, actor, action, 'issues', ticketId, `${type === 'comments' ? 'Comment' : type === 'time_entries' ? 'Time entry' : type === 'documents' ? 'Attachment' : 'Ticket link'} ${action}: ${row.name || row.note || ''}`.slice(0,500)]);
+    if (type === 'issue_links') await connection.execute('INSERT INTO activity (project_id,actor,action,entity_type,entity_id,summary) VALUES (?,?,?,?,?,?)',
+      [project,actor,action,'issues',row.to_issue_id,`Ticket link ${action}`]);
+  }
   if(type==='issues'){
     const [[projectRow]]=await connection.execute('SELECT project_key,name FROM projects WHERE id=?',[row.project_id]);
     const record=async(memberId,event,snapshot)=>{if(!memberId)return;await connection.execute('INSERT INTO member_task_history(member_id,issue_id,ticket_key,task_name,project_name,kind,status,previous_status,event) VALUES (?,?,?,?,?,?,?,?,?)',[memberId,row.id,projectRow.project_key+'-'+row.ticket_number,row.name,projectRow.name,row.kind,snapshot.status,before?.status||null,event])};
@@ -68,7 +77,8 @@ export async function validateRecord(connection, type, values) {
     const [rows] = await connection.execute('SELECT project_id FROM issues WHERE id=? AND deleted_at IS NULL FOR SHARE', [values.issueId]);
     if (!rows.length || rows[0].project_id !== values.projectId) throw fail(400, 'INVALID_REFERENCE', 'The ticket must belong to the selected project.');
   }
-  const refs = { projectId: 'projects', managerId: 'members', teamId: 'teams', assigneeId: 'members', ownerId: 'members' };
+  if (type === 'comments' && !values.body?.trim()) throw fail(400,'EMPTY_COMMENT','Enter a comment.');
+  const refs = { issueId:'issues', authorId:'members', memberId:'members', fromIssueId:'issues', toIssueId:'issues', projectId: 'projects', managerId: 'members', teamId: 'teams', assigneeId: 'members', ownerId: 'members' };
   for (const [key, table] of Object.entries(refs)) if (values[key]) {
     const [rows] = await connection.execute(`SELECT id FROM ${table} WHERE id=? AND deleted_at IS NULL FOR SHARE`, [values[key]]);
     if (!rows.length) throw fail(400, 'INVALID_REFERENCE', `${key} does not refer to an active record.`);
@@ -102,6 +112,20 @@ export async function saveRecord(connection, request, type, body, { id, replace 
     ticketProject=await getRecord(connection,'projects',values.projectId,{lock:true});
     const types=typeof ticketProject.ticket_types==='string'?JSON.parse(ticketProject.ticket_types):ticketProject.ticket_types;
     if(!types.includes(values.kind))throw fail(400,'INVALID_TICKET_TYPE','Choose a ticket type configured for this project.');
+  }
+  if (type === 'issue_links') {
+    if(values.fromIssueId===values.toIssueId)throw fail(400,'INVALID_LINK','A ticket cannot link to itself.');
+    const from=await getRecord(connection,'issues',values.fromIssueId);
+    const to=await getRecord(connection,'issues',values.toIssueId);
+    if(from.project_id!==to.project_id)throw fail(400,'INVALID_LINK','Linked tickets must belong to the same project.');
+    await getRecord(connection,'projects',from.project_id,{lock:true});
+    const [edges]=await connection.execute("SELECT * FROM issue_links WHERE deleted_at IS NULL AND id<>?",[id||'']);
+    if(edges.some(e=>e.kind===values.kind&&((e.from_issue_id===values.fromIssueId&&e.to_issue_id===values.toIssueId)||(values.kind==='related'&&e.from_issue_id===values.toIssueId&&e.to_issue_id===values.fromIssueId))))throw fail(409,'DUPLICATE_LINK','These tickets are already linked.');
+    if(values.kind==='parent'){
+      if(edges.some(e=>e.kind==='parent'&&e.from_issue_id===values.fromIssueId))throw fail(409,'PARENT_EXISTS','This ticket already has a parent.');
+      let cursor=values.toIssueId;const visited=new Set([values.fromIssueId]);
+      while(cursor){if(visited.has(cursor))throw fail(400,'CYCLIC_LINK','Parent links cannot form a cycle.');visited.add(cursor);cursor=edges.find(e=>e.kind==='parent'&&e.from_issue_id===cursor)?.to_issue_id;}
+    }
   }
   await validateRecord(connection, type, values);
   if (type === 'issues' && old && old.project_id !== values.projectId) {

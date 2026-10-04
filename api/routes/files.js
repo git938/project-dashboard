@@ -65,7 +65,8 @@ export async function fileRoutes(app) {
         if (fields.id && !/^[A-Za-z0-9_-]{1,64}$/.test(fields.id)) throw fail(400, 'INVALID_ID', 'Invalid document ID.');
         const meta = { ...(fields.id ? { id: fields.id } : {}), projectId: fields.projectId ?? old?.project_id, issueId: fields.issueId ?? old?.issue_id ?? null, name: fields.name ?? old?.name, category: fields.category ?? old?.category ?? 'Other', kind: 'file', content: null, ...(fields.version ? { version: fields.version } : {}) };
         if (!/^[A-Za-z0-9_-]{1,64}$/.test(meta.projectId || '') || !meta.name?.trim() || meta.name.length > 160 || meta.category.length > 64) throw fail(400, 'VALIDATION_ERROR', 'Provide a valid projectId, name (1–160 characters), and category (up to 64 characters).');
-        if (meta.issueId && (!/^[A-Za-z0-9_-]{1,64}$/.test(meta.issueId) || !['image/png','image/jpeg','image/webp'].includes(file.mime))) throw fail(400, 'INVALID_TICKET_IMAGE', 'Choose a PNG, JPEG or WebP image for this ticket.');
+        if(meta.issueId&&!/^[A-Za-z0-9_-]{1,64}$/.test(meta.issueId))throw fail(400,'INVALID_REFERENCE','Invalid ticket ID.');
+        if(meta.issueId&&/\.(png|jpe?g|webp)$/i.test(file.name)&&!['image/png','image/jpeg','image/webp'].includes(file.mime))throw fail(400,'INVALID_TICKET_IMAGE','The image contents do not match a supported image format.');
         return saveRecord(c, request, 'documents', meta, { id: old?.id, file: { storage_key: file.key, original_name: file.name, mime_type: file.mime, size_bytes: file.size } });
       });
       return reply.code(replace ? 200 : 201).send({ data });

@@ -100,3 +100,14 @@ body.te-open { overflow: hidden; }
 .te-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 @media (max-width: 900px) { .te-body { grid-template-columns: 1fr; } .te-rail { border-left: 0; border-top: 1px solid #ececf1; } .te-grid { grid-template-columns: 1fr; } }
 .te-overlay{background:#142d53bb}.te-head{background:#f6faff}.te-title,.te-field>span{color:#153763}.te-btn.te-primary{background:#1678ff;border-color:#1678ff}.te-tab.is-active{color:#1678ff;border-bottom-color:#1678ff}.te-rail{position:static;width:auto;height:auto;box-sizing:border-box}.te-block:has(.ticket-rich){display:block}.te-hint:has([data-te-wordcount]){display:none}
+
+.te-feedback{margin:0;padding:0 22px;color:#b42318;white-space:pre-wrap}
+.te-feedback:not(:empty){padding:14px 22px;background:#fff1f0}
+.te-comment-text{white-space:pre-wrap;overflow-wrap:anywhere}
+.te-image-preview{width:96px;height:72px;object-fit:cover;border-radius:8px}
+.te-attachment{flex-wrap:wrap}
+.te-time-entries{padding:0;list-style:none;max-height:240px;overflow:auto}
+.te-time-entries li{padding:10px 0;border-top:1px solid #e1e9f3}
+.te-time-entries small{display:block;margin:4px 0}
+.te-subtask-form{margin-top:12px;display:grid;gap:10px}
+.te-link .te-btn{text-align:left;white-space:normal}

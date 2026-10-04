@@ -1,8 +1,19 @@
+import { bodySchema, paramsSchema } from '../schemas/resources.js';
 import { transaction } from '../db.js';
-import { getRecord, decorate, serialize, fail } from '../services/records.js';
+import { getRecord, decorate, serialize, fail, saveRecord } from '../services/records.js';
 
 // Aggregate payload for the ProjectHub-style ticket editor panel.
 export async function issueDetailRoutes(app) {
+  app.post('/api/issues/:id/subtasks', {schema:{tags:['issues'],params:paramsSchema,body:bodySchema('issues',false,true)}}, async(request,reply)=>{
+    const data=await transaction(app.db,async c=>{
+      const parent=await getRecord(c,'issues',request.params.id);
+      if(parent.project_id!==request.body.projectId)throw fail(400,'INVALID_REFERENCE','The subtask must stay in its parent project.');
+      const child=await saveRecord(c,request,'issues',request.body);
+      await saveRecord(c,request,'issue_links',{fromIssueId:child.id,toIssueId:parent.id,kind:'parent'});
+      return child;
+    });
+    return reply.code(201).send({data});
+  });
   app.get('/api/issues/:id/detail', { schema: { tags: ['issues'], params: { type: 'object', additionalProperties: false, required: ['id'], properties: { id: { type: 'string', minLength: 1, maxLength: 64 } } } } }, async request => {
     const lookup = request.params.id;
     return transaction(app.db, async c => {
@@ -12,7 +23,7 @@ export async function issueDetailRoutes(app) {
       issue = await getRecord(c, 'issues', byKey.length ? byKey[0].id : lookup);
 
       const [decorated] = await decorate(c, 'issues', [issue]);
-      const [[project]] = await c.execute('SELECT id, name, project_key FROM projects WHERE id=?', [issue.project_id]);
+      const [[project]] = await c.execute('SELECT id, name, project_key, ticket_types FROM projects WHERE id=?', [issue.project_id]);
       const [[assigneeRow]] = issue.assignee_id ? await c.execute('SELECT id, name, role, avatar_storage_key, version FROM members WHERE id=?', [issue.assignee_id]) : [[null]];
       const assignee = assigneeRow ? serialize(assigneeRow) : null;
 
@@ -28,15 +39,15 @@ export async function issueDetailRoutes(app) {
 
       // Time tracking.
       const [[timeAgg]] = await c.execute('SELECT COUNT(*) AS entries, COALESCE(SUM(minutes),0) AS logged FROM time_entries WHERE issue_id=? AND deleted_at IS NULL', [issue.id]);
-      const [timeEntries] = await c.query('SELECT t.id,t.minutes,t.spent_on,t.note,t.member_id,m.name AS member_name FROM time_entries t LEFT JOIN members m ON m.id=t.member_id WHERE t.issue_id=? AND t.deleted_at IS NULL ORDER BY t.spent_on DESC,t.id DESC', [issue.id]);
+      const [timeEntries] = await c.query('SELECT t.id,t.version,t.minutes,t.spent_on,t.note,t.member_id,m.name AS member_name FROM time_entries t LEFT JOIN members m ON m.id=t.member_id WHERE t.issue_id=? AND t.deleted_at IS NULL ORDER BY t.spent_on DESC,t.id DESC', [issue.id]);
 
       // Links: parent + related.
-      const [links] = await c.query(`SELECT il.kind, i.id, i.name, i.status, i.kind AS ticket_kind, p.project_key, i.ticket_number
+      const [links] = await c.query(`SELECT il.id AS link_id,il.version AS link_version,il.from_issue_id,il.to_issue_id,il.kind, i.id, i.name, i.status, i.kind AS ticket_kind, p.project_key, i.ticket_number
         FROM issue_links il
         JOIN issues i ON i.id = IF(il.from_issue_id=?, il.to_issue_id, il.from_issue_id)
         JOIN projects p ON p.id=i.project_id
         WHERE (il.from_issue_id=? OR il.to_issue_id=?) AND il.deleted_at IS NULL AND i.deleted_at IS NULL`, [issue.id, issue.id, issue.id]);
-      const linkOf = kind => links.filter(l => l.kind === kind).map(l => ({ id: l.id, ticketKey: `${l.project_key}-${l.ticket_number}`, name: l.name, status: l.status, kind: l.ticket_kind }));
+      const linkOf = kind => links.filter(l => kind === 'children' ? l.kind === 'parent' && l.to_issue_id === issue.id : l.kind === kind && (kind !== 'parent' || l.from_issue_id === issue.id)).map(l => ({ linkId:l.link_id,version:l.link_version,id: l.id, ticketKey: `${l.project_key}-${l.ticket_number}`, name: l.name, status: l.status, kind: l.ticket_kind }));
 
       // Status history from activity summaries (best-effort) + member task history.
       const [activity] = await c.query("SELECT id,actor,action,summary,created_at FROM activity WHERE entity_type='issues' AND entity_id=? ORDER BY created_at DESC, id DESC LIMIT 50", [issue.id]);
@@ -44,13 +55,13 @@ export async function issueDetailRoutes(app) {
       return {
         data: {
           ...decorated,
-          project: project ? { id: project.id, name: project.name, projectKey: project.project_key } : null,
+          project: project ? { id: project.id, name: project.name, projectKey: project.project_key, ticketTypes: typeof project.ticket_types==='string'?JSON.parse(project.ticket_types):project.ticket_types } : null,
           assignee,
           labels,
           comments: comments.map(x => ({ id: x.id, body: x.body, createdAt: x.created_at, updatedAt: x.updated_at, version: x.version, author: x.author_id ? { id: x.author_id, name: x.author_name, avatarUrl: x.avatar_storage_key ? `/api/members/${x.author_id}/avatar?v=${x.author_version}` : null } : null })),
           attachments,
-          timeTracking: { estimateMinutes: issue.estimate_minutes === null || issue.estimate_minutes === undefined ? null : Number(issue.estimate_minutes), loggedMinutes: Number(timeAgg.logged), entries: Number(timeAgg.entries), entriesList: timeEntries.map(t => ({ id: t.id, minutes: t.minutes, spentOn: t.spent_on, note: t.note, memberId: t.member_id, memberName: t.member_name })) },
-          links: { parent: linkOf('parent'), related: linkOf('related') },
+          timeTracking: { estimateMinutes: issue.estimate_minutes === null || issue.estimate_minutes === undefined ? null : Number(issue.estimate_minutes), loggedMinutes: Number(timeAgg.logged), entries: Number(timeAgg.entries), entriesList: timeEntries.map(t => ({ id: t.id, version:t.version, minutes: t.minutes, spentOn: t.spent_on, note: t.note, memberId: t.member_id, memberName: t.member_name })) },
+          links: { parent: linkOf('parent'), children:linkOf('children'), related: linkOf('related') },
           activity: activity.map(a => serialize(a)),
           counts: { comments: comments.length, attachments: attachments.length, activity: activity.length }
         }

@@ -250,3 +250,16 @@ Open **Risk Management** in the sidebar or `/#risks`. This aggregates each proje
 ### Settings
 
 `/#settings` provides device-local preferences (date locale/format, default landing view, risk page size, density and reduced motion), shared member-profile editing, and a JSON workspace export including project-tool registers. Preferences use browser localStorage and do not sync between devices or server origins. Date localization applies to workspace date labels, not full UI translation. Export excludes uploaded file contents and is not a database backup. Notifications, authentication management, external integrations, billing and role-based permissions are explicitly shown as unavailable rather than simulated. No database migration required.
+
+### Ticket collaboration
+The shared ticket editor saves rich descriptions, ticket metadata and labels. Comments
+support add/edit/remove with explicit member attribution (this is not authentication).
+Files are stored through the document upload API; PNG/JPEG/WebP have previews and other
+files download as attachments. Time entries persist with member, date and minutes.
+Creating a subtask atomically creates the ticket and its child-to-parent link. These
+actions appear in the ticket activity log. Unsaved description/metadata changes survive
+comment, upload and time-entry refreshes.
+
+Deployment: this change requires the existing migrations through 010, but adds no new
+migration. Backend restart by the designated deployment owner is required for the new
+subtask endpoint. Agents must not update /opt/project-dashboard or restart VPS services.

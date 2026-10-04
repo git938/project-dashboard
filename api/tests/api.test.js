@@ -15,7 +15,8 @@ function multipart(fields,buffer,filename='fixture.txt'){const boundary='----tes
 before(async()=>{pool=createPool();dir=await mkdtemp(path.join(os.tmpdir(),'dashboard-api-test-'));app=await buildApp({pool,logger:false,settings:{...config,uploadDir:dir,maxUpload:2048,maxAvatar:512}});await app.ready();});
 after(async()=>{for(const [type,id] of created.reverse()){
  await pool.execute('DELETE FROM activity WHERE entity_id=?',[id]);
- if(type==='issues')await pool.execute('DELETE FROM member_task_history WHERE issue_id=?',[id]);
+ if(type==='issues'){await pool.execute('DELETE FROM member_task_history WHERE issue_id=?',[id]);await pool.execute('DELETE FROM issue_links WHERE from_issue_id=? OR to_issue_id=?',[id,id]);}
+ if(type==='labels')await pool.execute('DELETE FROM issue_labels WHERE label_id=?',[id]);
  for(const [table,column] of [['event_attendees','event_id'],['team_members','team_id'],['project_members','project_id']]) if((type==='events'&&table==='event_attendees')||(type==='teams'&&table==='team_members')||(type==='projects'&&table==='project_members'))await pool.execute(`DELETE FROM ${table} WHERE ${column}=?`,[id]);
  await pool.execute(`DELETE FROM ${type} WHERE id=?`,[id]);
 }await app?.close();await pool?.end();if(dir)await rm(dir,{recursive:true,force:true});});
@@ -171,4 +172,46 @@ test('rich ticket descriptions survive create, update and detail reload',async()
  const result=await call('PATCH',`/api/issues/${issue.id}`,{version:issue.version,description});
  assert.equal(result.statusCode,200,result.body);
  assert.equal(json(await call('GET',`/api/issues/${issue.id}/detail`)).data.description,description);
+});
+
+test('ticket collaboration persists comments, time, attachments, labels, subtasks and activity',async()=>{
+ const member=await create('members',{name:'Collaboration tester'});
+ const project=await create('projects',{name:'Collaboration regression',startDate:'2026-10-01',endDate:'2026-10-31'});
+ const issue=await create('issues',{projectId:project.id,name:'Parent ticket',startDate:'2026-10-01',endDate:'2026-10-10'});
+ const comment=await create('comments',{issueId:issue.id,authorId:member.id,body:'First comment'});
+ let result=await call('PATCH',`/api/comments/${comment.id}`,{version:comment.version,body:'Edited comment'});
+ assert.equal(result.statusCode,200,result.body);
+ assert.equal((await call('PATCH',`/api/comments/${comment.id}`,{version:comment.version,body:'Stale'})).statusCode,409);
+ assert.equal((await call('POST','/api/comments',{issueId:issue.id,authorId:'missing-member',body:'Invalid'})).statusCode,400);
+ assert.equal((await call('POST','/api/comments',{issueId:issue.id,body:'   '})).statusCode,400);
+ const time=await create('time_entries',{issueId:issue.id,memberId:member.id,minutes:90,spentOn:'2026-10-04',note:'Testing'});
+ const label=await create('labels',{name:'Test-'+randomUUID().slice(0,8)});
+ result=await call('PATCH',`/api/issues/${issue.id}`,{version:issue.version,labelIds:[label.id],estimateMinutes:180});
+ assert.equal(result.statusCode,200,result.body);
+ const upload=await app.inject({method:'POST',url:'/api/documents/upload',...multipart({projectId:project.id,issueId:issue.id,name:'Evidence'},Buffer.from('Evidence'),'evidence.txt')});
+ assert.equal(upload.statusCode,201,upload.body);created.push(['documents',upload.json().data.id]);
+ const childResponse=await call('POST',`/api/issues/${issue.id}/subtasks`,{projectId:project.id,name:'Child ticket',kind:'Subtask',startDate:'2026-10-01',endDate:'2026-10-02'});
+ assert.equal(childResponse.statusCode,201,childResponse.body);
+ const child=childResponse.json().data;created.push(['issues',child.id]);
+ let detail=json(await call('GET',`/api/issues/${child.id}/detail`)).data;
+ assert.equal(detail.links.parent[0].id,issue.id);
+ created.push(['issue_links',detail.links.parent[0].linkId]);
+ assert.equal((await call('POST','/api/issue_links',{fromIssueId:issue.id,toIssueId:child.id,kind:'parent'})).statusCode,400);
+ detail=json(await call('GET',`/api/issues/${issue.id}/detail`)).data;
+ assert.equal(detail.links.parent.length,0);
+ assert.equal(detail.links.children[0].id,child.id);
+ assert.equal(detail.comments[0].body,'Edited comment');
+ assert.equal(detail.comments[0].author.id,member.id);
+ assert.equal(detail.timeTracking.loggedMinutes,90);
+ assert.equal(detail.timeTracking.estimateMinutes,180);
+ assert.equal(detail.attachments.length,1);
+ assert.equal(detail.labels[0].id,label.id);
+ for(const word of ['Comment','Time entry','Attachment','Ticket link'])assert.ok(detail.activity.some(a=>a.summary.includes(word)),word);
+ assert.equal((await call('DELETE',`/api/comments/${comment.id}?version=2`)).statusCode,204);
+ assert.equal((await call('DELETE',`/api/time_entries/${time.id}?version=1`)).statusCode,204);
+ assert.equal((await call('DELETE',`/api/documents/${upload.json().data.id}`)).statusCode,204);
+ result=await call('PATCH',`/api/issues/${issue.id}`,{version:detail.version,labelIds:[]});
+ assert.equal(result.statusCode,200,result.body);
+ detail=json(await call('GET',`/api/issues/${issue.id}/detail`)).data;
+ assert.equal(detail.comments.length,0);assert.equal(detail.timeTracking.loggedMinutes,0);assert.equal(detail.attachments.length,0);assert.equal(detail.labels.length,0);
 });
