@@ -1,0 +1,45 @@
+[Unit]
+Description=Deploy project-dashboard from GitHub into the deployment target
+Documentation=file:///opt/project-dashboard/deploy/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# The git, backup and npm work runs as the service user, which owns the target.
+# The systemctl steps below carry a "+" prefix, which makes systemd run them as
+# root -- so restarting the app needs no polkit rule and the sync process never
+# gains privilege. That split is the whole point.
+User=project-dashboard
+Group=project-dashboard
+WorkingDirectory=/opt/project-dashboard
+
+# Private /run subdirectory owned by the service user. The sync step drops a
+# "changed" marker here; the privileged restart step reads it.
+RuntimeDirectory=project-dashboard-deploy
+RuntimeDirectoryMode=0700
+
+Environment=DEPLOY_TARGET=/opt/project-dashboard
+Environment=DEPLOY_REMOTE=origin
+Environment=DEPLOY_BRANCH=main
+Environment=DEPLOY_BACKUP_ROOT=/var/backups/project-dashboard
+Environment=DEPLOY_BACKUP_KEEP=20
+Environment=DEPLOY_INSTALL_DEPS=1
+Environment=DEPLOY_MIGRATE=1
+# 1 = stop the app before dumping the database. 0 relies on
+# mysqldump --single-transaction, which is a consistent InnoDB snapshot taken
+# while the app keeps serving, and lets a no-op poll cost nothing.
+Environment=DEPLOY_STOP_FOR_BACKUP=0
+# Set to a commit sha to require that the remote contains it.
+#Environment=DEPLOY_EXPECTED_COMMIT=
+# Set to 1 to throw away local changes in the target instead of stopping.
+#Environment=DEPLOY_DISCARD_DRIFT=0
+
+ExecStartPre=+/bin/sh -c 'if [ "${DEPLOY_STOP_FOR_BACKUP}" = "1" ]; then echo "[deploy] stopping project-dashboard for a frozen backup"; systemctl stop project-dashboard.service; fi'
+
+ExecStart=/usr/local/bin/deploy-project-dashboard
+
+ExecStartPost=+/usr/local/bin/deploy-project-dashboard-restart
+
+# Network, dump and readiness loop -- generous, but never unbounded.
+TimeoutStartSec=600
