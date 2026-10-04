@@ -87,12 +87,12 @@ body.te-open { overflow: hidden; }
 .te-link { display: flex; align-items: center; gap: 7px; font-size: 12.5px; padding: 3px 0; }
 .te-link small { color: #9a9aa6; }
 .te-tag { background: #eceef2; border-radius: 5px; padding: 1px 6px; font-size: 11px; font-weight: 600; color: #55555f; }
-.te-time { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; font-size: 13px; }
+.te-time { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; font-size: 13px; }
 .te-time small { display: block; color: #9a9aa6; font-size: 11px; }
 .te-time-bar { grid-column: 1 / -1; position: relative; height: 8px; border-radius: 999px; background: #eceef2; overflow: hidden; }
 .te-time-bar i { position: absolute; inset: 0 auto 0 0; background: #4f46e5; }
 .te-time-bar span { position: absolute; right: 6px; top: -19px; font-size: 11px; color: #6a6a78; }
-.te-time-form { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 8px; }
+.te-time-form { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin-top: 8px; }
 .te-time-form input { font: inherit; font-size: 12.5px; border: 1px solid #d9d9e3; border-radius: 8px; padding: 7px 9px; }
 .te-time-form button { grid-column: 1 / -1; }
 .te-quick { display: flex; flex-direction: column; gap: 8px; }
@@ -111,3 +111,11 @@ body.te-open { overflow: hidden; }
 .te-time-entries small{display:block;margin:4px 0}
 .te-subtask-form{margin-top:12px;display:grid;gap:10px}
 .te-link .te-btn{text-align:left;white-space:normal}
+
+/* Compact time entry controls contained within the ticket rail. */
+.te-time > .te-field,.te-time-form > .te-field,.te-time-form > input[name="note"],.te-time-entries{grid-column:1 / -1;min-width:0}
+.te-time-form{min-width:0;align-items:end}
+.te-time input,.te-time select{width:100%;min-width:0;box-sizing:border-box;height:32px;padding:5px 8px;font-size:12px;border-radius:6px}
+.te-time .te-field{gap:4px;margin:0}
+.te-time .te-field > span{font-size:11px}
+.te-time-form button{padding:6px 10px;min-height:32px}
