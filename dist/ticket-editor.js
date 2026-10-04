@@ -112,7 +112,7 @@
         <div class="te-rail">${rail(d)}</div>
       </div>
     </div>`;
-    const description=root.querySelector('[data-te-field=description]');if(description)TicketRichText.mount(description);
+    const description=root.querySelector('[data-te-field=description]');if(description)TicketRichText.mount(description,{uploadImage});
   }
   function tabBtn(id, label, count) {
     return `<button type="button" class="te-tab ${tab === id ? 'is-active' : ''}" data-te-tab="${id}">${esc(label)}${count != null ? ` <span class="te-tab-count">${count}</span>` : ''}</button>`;
@@ -179,6 +179,7 @@
         ${/^image\/(png|jpeg|webp)$/.test(a.mimeType||'')?`<a href="/api/documents/${esc(a.id)}/preview" target="_blank" rel="noopener"><img class="te-image-preview" src="/api/documents/${esc(a.id)}/preview" alt="${esc(a.name)}"></a>`:''}
         <div><strong>${esc(a.originalName || a.name)}</strong><small>${a.sizeBytes ? (Number(a.sizeBytes) / 1024 / 1024).toFixed(1) + ' MB' : 'note'} · ${esc(shortDate(a.createdAt))}</small></div>
         ${a.downloadUrl ? `<a class="te-btn te-ghost" href="${esc(a.downloadUrl)}">Download</a>` : ''}
+        ${/^image\/(png|jpeg|webp)$/.test(a.mimeType||'')?`<button type="button" class="te-btn te-ghost" data-te-insert-image="${esc(a.id)}">Insert in description</button>`:''}
         <button type="button" class="te-btn te-ghost" data-te-file-remove="${esc(a.id)}">Remove</button>
       </article>`).join('') || '<p class="te-empty">No attachments yet.</p>';
     return `<div class="te-attachments"><div class="te-attachment-list">${list}</div>
@@ -250,6 +251,13 @@
     if (t.closest('[data-te-save]')) { save(); return; }
     const rm = t.closest('[data-te-remove-label]');
     if (rm) { state.labelIds = (state.labelIds || []).filter(id => id !== rm.dataset.teRemoveLabel); state.labels = (state.labels || []).filter(l => l.id !== rm.dataset.teRemoveLabel); draft.labelIds=[...state.labelIds];render(); return; }
+    const image=t.closest('[data-te-insert-image]');
+    if(image){
+      const attachment=state.attachments.find(a=>a.id===image.dataset.teInsertImage);
+      if(!attachment)return;
+      state.description=TicketRichText.prefix+TicketRichText.sanitize(TicketRichText.html(state.description||'')+'<p><img src="/api/documents/'+attachment.id+'/preview" alt="'+esc(attachment.name)+'"></p><p><br></p>');
+      draft.description=state.description;tab='details';render();toast('Image inserted. Save the ticket to keep this change.');return;
+    }
     const linked=t.closest('[data-te-open]');
     if(linked){if(Object.keys(draft).length&&!confirm('Discard unsaved changes and open this ticket?'))return;open(linked.dataset.teOpen);return;}
     if(t.closest('[data-te-comment-cancel]')){commentEdit=null;commentBody='';render();return;}
@@ -275,6 +283,17 @@
       const v = e.target._rich?.querySelector('.rich-body').textContent.trim()||e.target.value.trim();
       if (wc) wc.textContent = v ? v.split(/\s+/).length : 0;
     }
+  }
+  async function uploadImage(file){
+    if(busy)throw Error('Wait for the current save to finish.');
+    captureDraft();busy=true;
+    try{
+      const data=new FormData();data.append('projectId',state.projectId);data.append('issueId',state.id);data.append('name',file.name.slice(0,160));data.append('file',file);
+      const result=await api('/api/documents/upload',{method:'POST',body:data});
+      state.attachments.push(result.data);
+      const count=root.querySelector('[data-te-tab="attachments"] .te-tab-count');if(count)count.textContent=state.attachments.length;
+      return {src:'/api/documents/'+result.data.id+'/preview'};
+    }finally{busy=false;}
   }
   function onChange(e){
     if(e.target.name==='authorId'||e.target.name==='memberId')actor=e.target.value;
