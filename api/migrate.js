@@ -69,5 +69,23 @@ try {
     await c.query("UPDATE issues SET progress=100 WHERE status='Done'");
     await c.query("INSERT INTO schema_migrations(version) VALUES ('008_issue_progress')");
   }
+  const [ticketEditorMigration]=await c.query("SELECT version FROM schema_migrations WHERE version='009_ticket_editor'");
+  if(!ticketEditorMigration.length){
+    let editorSql=await readFile(path.join(root,'db/migrations/009_ticket_editor.sql'),'utf8');
+    // Match existing parent IDs rather than assuming the database's collation.
+    for(const [table,columns] of [['issues',['issue_id','from_issue_id','to_issue_id']],['members',['author_id','member_id']]]){
+      const [[definition]]=await c.query('SELECT CHARACTER_SET_NAME AS charsetName,COLLATION_NAME AS collationName FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=? AND TABLE_NAME=? AND COLUMN_NAME=?',[config.db.database,table,'id']);
+      if(!definition||!/^[a-zA-Z0-9_]+$/.test(definition.charsetName)||!/^[a-zA-Z0-9_]+$/.test(definition.collationName))throw Error('Invalid parent ID collation');
+      for(const column of columns)editorSql=editorSql.replaceAll(' '+column+' VARCHAR(64)',` ${column} VARCHAR(64) CHARACTER SET ${definition.charsetName} COLLATE ${definition.collationName}`);
+    }
+    await c.query(editorSql);
+    await c.query("INSERT INTO schema_migrations(version) VALUES ('009_ticket_editor')");
+  }
+  const [estimateMigration]=await c.query("SELECT version FROM schema_migrations WHERE version='010_issue_estimate'");
+  if(!estimateMigration.length){
+    const [columns]=await c.query('SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=? AND TABLE_NAME=? AND COLUMN_NAME=?',[config.db.database,'issues','estimate_minutes']);
+    if(!columns.length) await c.query(await readFile(path.join(root,'db/migrations/010_issue_estimate.sql'),'utf8'));
+    await c.query("INSERT INTO schema_migrations(version) VALUES ('010_issue_estimate')");
+  }
   console.log('Database migrations complete. No seed data was loaded.');
 } finally { await c.query("SELECT RELEASE_LOCK('project_dashboard_migrations')").catch(()=>{}); await c.end(); }

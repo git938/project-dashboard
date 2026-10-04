@@ -8,6 +8,7 @@ import path from 'node:path';
 import { config, root } from './config.js';
 import { createPool } from './db.js';
 import { resourceRoutes } from './routes/resources.js';
+import { issueDetailRoutes } from './routes/issue-detail.js';
 import { fileRoutes } from './routes/files.js';
 import { fail } from './services/records.js';
 export async function buildApp({ pool, settings = config, logger = true } = {}) {
@@ -39,6 +40,7 @@ export async function buildApp({ pool, settings = config, logger = true } = {}) 
     catch { return reply.code(503).send({ status: 'not_ready' }); }
   });
   await app.register(resourceRoutes);
+  await app.register(issueDetailRoutes);
   await app.register(projectToolRoutes);
   await app.register(fileRoutes);
   app.get('/api/openapi.json', { schema: { hide: true } }, async () => app.swagger());
