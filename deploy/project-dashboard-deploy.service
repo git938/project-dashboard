@@ -19,6 +19,10 @@ WorkingDirectory=/opt/project-dashboard
 RuntimeDirectory=project-dashboard-deploy
 RuntimeDirectoryMode=0700
 
+# Deterministic toolchain: the app itself runs on /usr/local/bin/node, and the
+# pipeline needs node and npm on PATH while running as the service user. Do not
+# rely on systemd's implicit default here.
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
 Environment=DEPLOY_TARGET=/opt/project-dashboard
 Environment=DEPLOY_REMOTE=origin
 Environment=DEPLOY_BRANCH=main
