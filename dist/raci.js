@@ -11,28 +11,25 @@ window.ProjectRaci = (() => {
   function mount(container,context,record){
     const {project,members,tasks,avatar}=context;
     let entries=structuredClone(record.entries),version=record.version,dirty=false,busy=false,search='',phase='',role='',message='';
-    const collapsed=new Set(),extraMembers=new Set();
+    const collapsed=new Set();
     const base='/api/projects/'+encodeURIComponent(project.id)+'/tools';
     const blank=t=>({id:t.id,name:t.name,responsible:[],accountable:'',consulted:[],informed:[],notes:''});
     function rows(){return [...tasks.map(t=>({...blank(t),...(entries.find(e=>e.id===t.id)||{}),name:t.name,phase:t.phase||'Other',ticketKey:ProjectAPI.ticketKey(t)})),...entries.filter(e=>!tasks.some(t=>t.id===e.id)).map(e=>({...e,phase:'Activities',ticketKey:'—'}))];}
-    function people(){
-      const ids=new Set([...extraMembers,...(project.memberIds||[]),project.managerId,...tasks.map(t=>t.assigneeId)]);
-      const team=window.Bootstrap?.teams?.find(t=>t.id===project.teamId);for(const id of team?.memberIds||[])ids.add(id);
-      for(const row of entries)for(const id of [...row.responsible||[],row.accountable,...row.consulted||[],...row.informed||[]])if(id)ids.add(id);
-      return members.filter(m=>ids.has(m.id));
-    }
+    function people(){return projectMembers(project,members);}
     function visible(){
       return rows().filter(row=>(!phase||row.phase===phase)&&(!role||people().some(m=>roleOf(row,m.id).split('/').includes(role)))&&(!search||[row.name,row.ticketKey,...people().filter(m=>roleOf(row,m.id)).map(m=>m.name)].join(' ').toLowerCase().includes(search.toLowerCase())));
     }
     function draw(){
       const all=rows(),shown=visible(),team=people(),counts=Object.fromEntries(Object.keys(roles).map(r=>[r,all.reduce((n,row)=>n+team.filter(m=>roleOf(row,m.id).split('/').includes(r)).length,0)]));
       const groups=[...new Set(shown.map(r=>r.phase))];
+      const outside=entries.some(r=>[...(r.responsible||[]),r.accountable,...(r.consulted||[]),...(r.informed||[])].some(id=>id&&!team.some(m=>m.id===id)));
       container.innerHTML=`<div class="rc-heading"><div><h2><span class="fa-solid fa-people-arrows"></span> RACI Matrix</h2><p>Define roles and responsibilities for ${escape(project.name)}.</p></div><div class="work-actions"><button class="secondary" data-rc-export>Export CSV</button><button class="secondary" data-rc-reload>Reload</button><button class="primary" data-rc-save ${!dirty||busy?'disabled':''}>Save changes</button></div></div>
+      ${outside?'<p class="rc-feedback">Some saved assignments belong to former project members. They are preserved but hidden. Use Manage project members to add them back, or clear the activity’s assignments and reassign.</p>':''}
       <p class="rc-feedback" role="status">${escape(message|| (dirty?'Unsaved changes':'Assignments saved per project'))}</p>
       <div class="rc-layout"><section class="panel rc-main"><div class="rc-filters">
       <select aria-label="Filter RACI phase" data-rc-phase><option value="">All phases</option>${[...new Set(all.map(r=>r.phase))].map(p=>`<option ${p===phase?'selected':''}>${escape(p)}</option>`).join('')}</select>
       <select aria-label="Filter RACI role" data-rc-role><option value="">All RACI roles</option>${Object.entries(roles).map(([key,v])=>`<option value="${key}" ${role===key?'selected':''}>${key} · ${v[0]}</option>`).join('')}</select>
-      <select aria-label="Add RACI member" data-rc-add-member><option value="">Add member column…</option>${members.filter(m=>!team.some(t=>t.id===m.id)&&m.active!==false).map(m=>`<option value="${escape(m.id)}">${escape(m.name)}</option>`).join('')}</select>
+      <button class="secondary" data-project-edit="${escape(project.id)}">Manage project members</button>
       <input aria-label="Search RACI" data-rc-search placeholder="Search tasks or assigned members…" value="${escape(search)}"></div>
       <div class="rc-scroll"><table class="rc-table"><thead><tr><th class="rc-task">Task / Activity</th>${team.map(m=>`<th><div class="rc-member">${avatar(m)}<strong>${escape(m.name)}</strong><small>${escape(m.role||'Member')}</small></div></th>`).join('')}</tr></thead><tbody>
       ${groups.map(group=>`<tr class="rc-group"><th colspan="${team.length+1}"><button data-rc-group="${escape(group)}" aria-expanded="${!collapsed.has(group)}">${collapsed.has(group)?'▸':'▾'} ${escape(group)}</button></th></tr>${collapsed.has(group)?'':shown.filter(r=>r.phase===group).map(row=>`<tr><th class="rc-task"><span>${escape(row.name)}</span><small>${escape(row.ticketKey)} ${!row.responsible?.length||!row.accountable?'· Needs R and A':''}</small>${entries.some(e=>e.id===row.id)?`<button class="text-btn" data-rc-remove="${escape(row.id)}">${tasks.some(t=>t.id===row.id)?'Clear assignments':'Remove activity'}</button>`:''}</th>${team.map(m=>{const v=roleOf(row,m.id);return `<td><select class="rc-cell rc-${v.replace('/','')||'none'}" aria-label="${escape(row.name+' — '+m.name)}" data-rc-row="${escape(row.id)}" data-rc-member="${escape(m.id)}"><option value="">—</option>${[...new Set(['R','A','C','I','R/A',...(v?[v]:[])])].map(r=>`<option value="${r}" ${v===r?'selected':''}>${r}</option>`).join('')}</select></td>`}).join('')}</tr>`).join('')}`).join('')||`<tr><td colspan="${team.length+1}">No activities match these filters.</td></tr>`}
@@ -47,8 +44,7 @@ window.ProjectRaci = (() => {
     }
     container.onchange=e=>{
       if(busy)return;
-      if(e.target.hasAttribute('data-rc-add-member')){if(e.target.value)extraMembers.add(e.target.value);}
-      else if(e.target.hasAttribute('data-rc-phase'))phase=e.target.value;
+      if(e.target.hasAttribute('data-rc-phase'))phase=e.target.value;
       else if(e.target.hasAttribute('data-rc-role'))role=e.target.value;
       else if(e.target.dataset.rcRow){
         const id=e.target.dataset.rcRow;
@@ -61,6 +57,7 @@ window.ProjectRaci = (() => {
     container.onsubmit=e=>{e.preventDefault();if(busy)return;const form=e.target;if(!form.matches('.rc-add'))return;const name=new FormData(form).get('name').trim();if(!name)return;entries.push(blank({id:crypto.randomUUID(),name}));dirty=true;search='';phase='';role='';draw();};
     container.onclick=async e=>{
       const button=e.target.closest('button');if(!button||busy)return;
+      if(button.hasAttribute('data-project-edit')&&dirty){e.stopPropagation();message='Save or reload your RACI changes before updating project members.';draw();return;}
       if(button.dataset.rcRemove){entries=entries.filter(r=>r.id!==button.dataset.rcRemove);dirty=true;draw();return;}
       if(button.dataset.rcGroup){const key=button.dataset.rcGroup;collapsed.has(key)?collapsed.delete(key):collapsed.add(key);draw();return;}
       try{
@@ -81,5 +78,6 @@ window.ProjectRaci = (() => {
     };
     draw();
   }
-  return {mount,roleOf,assign};
+  function projectMembers(project,members){const ids=new Set(project.memberIds||[]);return members.filter(m=>ids.has(m.id));}
+  return {mount,roleOf,assign,projectMembers};
 })();

@@ -120,3 +120,11 @@ test('RACI assignment keeps one accountable member and supports combined R/A',as
  assign(row,'two','R/A');assert.equal(roleOf(row,'two'),'R/A');
  assign(row,'two','');assert.equal(row.accountable,'');assert.equal(row.responsible.length,0);
 });
+
+test('RACI columns use explicit project membership, not all workspace members or the manager',async()=>{
+ const code=await readFile(new URL('../../dist/raci.js',import.meta.url),'utf8');const sandbox={window:{}};vm.createContext(sandbox);vm.runInContext(code,sandbox);
+ const members=[{id:'a'},{id:'b'},{id:'manager'}],get=sandbox.window.ProjectRaci.projectMembers;
+ assert.deepEqual(Array.from(get({memberIds:['a'],managerId:'manager'},members),m=>m.id),['a']);
+ assert.deepEqual(Array.from(get({memberIds:['b']},members),m=>m.id),['b']);
+ assert.equal(get({memberIds:[]},members).length,0);
+});
