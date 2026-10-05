@@ -27,12 +27,12 @@
  async function changed(message){issues.forEach(t=>{t.color=P.colors[t.status];t.assigneeInitials=ProjectAPI.assigneeInitials(t.assignee)});await window.Workspace?.persist();render();draw();window.dispatchEvent(new Event('workspace:changed'));toast(message)}
  async function setStatus(id,status){let t=issues.find(t=>t.id===id);if(!t||!P.statuses.includes(status)||t.status===status)return;const old=t.status;t.status=status;try{await changed(t.id+' moved to '+status)}catch(error){t.status=old;render();draw();toast(error.message)}}
  function syncOverview(){
- $('#stats').innerHTML=[['Total Projects',projects.length,'Projects in this workspace'],['Total Tasks',issues.length,'Shared planning tasks'],['In Progress',issues.filter(t=>t.status==='In Progress').length,'Tasks underway'],['Completed',issues.filter(t=>t.status==='Done').length,'Tasks delivered']].map(([label,value,desc])=>`<article class="stat"><div class="stat-label">${label}</div><strong>${value}</strong><small>${desc}</small></article>`).join('');
+ $('#stats').innerHTML=[['Total Projects',projects.length,'Projects in this workspace'],['Total Tasks',issues.length,'Shared planning tasks'],['In Progress',issues.filter(t=>t.status==='In Progress').length,'Tasks underway'],['Completed',issues.filter(t=>t.status==='Done').length,'Tasks delivered']].map(([label,value,desc])=>`<article class="stat"><div class="stat-label">${label}</div><strong>${DashboardLinks.button(value,label,label==='Total Projects'?'projects':'tasks',label==='Total Projects'?projects:DashboardLinks.tasksFor(label,issues))}</strong><small>${desc}</small></article>`).join('');
  $('#nav-project-count').textContent=projects.length;$('#nav-issue-count').textContent=issues.length;
  let counts=P.statuses.map(s=>issues.filter(t=>t.status===s).length),palette=['#dadce2','#9ecddf','#e1c775','#b9a2d8','#98b5a4'],offset=0;
  let stops=counts.map((n,i)=>{let start=offset;offset+=n/(issues.length||1)*100;return `${palette[i]} ${start}% ${offset}%`});
  $('#issue-status-donut').style.background=issues.length?`conic-gradient(${stops.join(',')})`:'#e9e9ef';$('#issue-status-total').innerHTML=`${issues.length}<small>Total issues</small>`;
- $('#issue-status-legend').innerHTML=P.statuses.map((s,i)=>`<p><i class="dot ${P.colors[s]}"></i>${s}<b>${counts[i]}</b></p>`).join('');$('#issue-status-count').textContent=issues.length+(issues.length===1?' issue':' issues');
+ $('#issue-status-legend').innerHTML=P.statuses.map((s,i)=>`<p><i class="dot ${P.colors[s]}"></i>${s}<b>${DashboardLinks.button(counts[i],s+' tasks','tasks',issues.filter(t=>t.status===s))}</b></p>`).join('');$('#issue-status-count').textContent=issues.length+(issues.length===1?' issue':' issues');
  }
  const baseRender=render;render=function(){baseRender();syncOverview();if(view!=='overview')draw()};
  const originalCreate=openCreate;openCreate=function(t){if(t==='issue')openTask();else originalCreate(t)};

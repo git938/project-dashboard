@@ -128,3 +128,16 @@ test('RACI columns use explicit project membership, not all workspace members or
  assert.deepEqual(Array.from(get({memberIds:['b']},members),m=>m.id),['b']);
  assert.equal(get({memberIds:[]},members).length,0);
 });
+
+test('dashboard count links preserve exact records and status filters',async()=>{
+ const sandbox={window:{},document:{addEventListener(){}}};vm.createContext(sandbox);
+ vm.runInContext(await readFile(new URL('../../dist/dashboard-links.js',import.meta.url),'utf8'),sandbox);
+ const links=sandbox.window.DashboardLinks;
+ const tasks=[{id:'1',status:'Done',priority:'High',endDate:'2026-01-01'},{id:'2',status:'In Progress',priority:'High',endDate:'2026-01-01'},{id:'3',status:'Todo',priority:'Low',endDate:'2026-12-01'}];
+ assert.equal(links.tasksFor('Completed',tasks).map(t=>t.id).join(','),'1');
+ assert.equal(links.tasksFor('At Risk',tasks).map(t=>t.id).join(','),'2');
+ assert.equal(links.tasksFor('Overdue',tasks,'2026-10-05').map(t=>t.id).join(','),'2');
+ const html=links.button(1,'Completed','tasks',[{...tasks[0],name:'<img src=x onerror="bad">'}]);
+ assert.ok(html.includes('View Completed (1)'));assert.ok(!html.includes('<img'));
+ assert.ok(links.button(0,'Empty','tasks',[]).includes('data-metric-rows="[]"'));
+});
