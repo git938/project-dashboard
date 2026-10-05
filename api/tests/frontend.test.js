@@ -108,3 +108,15 @@ test('task progress averages per-task percentages instead of counting Done',asyn
  assert.equal(p.progress([{},{}]),0);
  assert.equal(p.progress([{progress:'50'},{progress:50}]),50);
 });
+
+test('RACI assignment keeps one accountable member and supports combined R/A',async()=>{
+ const code=await readFile(new URL('../../dist/raci.js',import.meta.url),'utf8');
+ const sandbox={window:{}};vm.createContext(sandbox);vm.runInContext(code,sandbox);
+ const {assign,roleOf}=sandbox.window.ProjectRaci;
+ const row={responsible:['one'],accountable:'one',consulted:['two'],informed:[]};
+ assert.equal(roleOf(row,'one'),'R/A');
+ assign(row,'two','A');assert.equal(row.accountable,'two');assert.equal(roleOf(row,'one'),'R');assert.equal(roleOf(row,'two'),'A');
+ assign(row,'one','C');assert.equal(roleOf(row,'one'),'C');assert.equal(row.responsible.length,0);
+ assign(row,'two','R/A');assert.equal(roleOf(row,'two'),'R/A');
+ assign(row,'two','');assert.equal(row.accountable,'');assert.equal(row.responsible.length,0);
+});
