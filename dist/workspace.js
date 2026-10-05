@@ -89,6 +89,7 @@
  function drawProjectPlanning(){const project=projects.find(p=>p.id===selected);if(!project)return;PlanningUI.detach();const panel=projectShell(project,projectPlanningTab);
   if(projectPlanningTab==='teammap'){ProjectTeamMap.mount(panel,{project,teams,members,issues},{avatar:profileAvatar})}
   else if(projectPlanningTab==='timeline'){panel.innerHTML=`<section class="panel pd-issue-map"><div class="panel-heading"><div><h2>Time-Based Task Map</h2><p>Timeline of this project's scheduled tasks</p></div><div class="pd-periods">${['Week','Month','Quarter'].map(range=>`<button data-project-map-range="${range}">${range}</button>`).join('')}</div></div><div id="project-timeline" class="timeline"></div></section>`;drawProjectIssueMap()}
+  else if(projectPlanningTab==='wbs')ProjectWbs.mount(panel,{project,tasks:issues.filter(t=>t.projectId===project.id)});
   else PlanningUI.mount(panel,projectPlanningTab,selected);
  }
  let projectActivityRequest=0,projectTimelineRange='Week';

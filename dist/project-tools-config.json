@@ -539,5 +539,37 @@
       }
     ],
     "single": false
+  },
+  "wbs": {
+    "title": "Work Breakdown Structure",
+    "fields": [
+      {
+        "key": "name",
+        "label": "Name",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "kind",
+        "label": "Level",
+        "type": "select",
+        "options": [
+          "Deliverable",
+          "Work package",
+          "Task"
+        ],
+        "required": true
+      },
+      {
+        "key": "parentId",
+        "label": "Parent",
+        "type": "text"
+      },
+      {
+        "key": "taskId",
+        "label": "Task",
+        "type": "text"
+      }
+    ]
   }
 }

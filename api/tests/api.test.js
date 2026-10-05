@@ -139,7 +139,7 @@ test('project tools persist independently, reject stale saves and validate membe
   changes:{name:'New scope',date:'2026-10-01',reason:'Customer need',status:'Proposed'},
   raci:{name:'Launch',responsible:[member.id],accountable:member.id,consulted:[],informed:[]}
  };
- assert.equal(Object.keys((await call('GET',base)).json().data).length,9);
+ assert.equal(Object.keys((await call('GET',base)).json().data).length,10);
  for(const [section,fields] of Object.entries(examples)){
   const entries=[{id:randomUUID(),...fields}];
   const saved=await call('PUT',base+'/'+section,{version:0,entries});assert.equal(saved.statusCode,200,saved.body);
@@ -214,4 +214,19 @@ test('ticket collaboration persists comments, time, attachments, labels, subtask
  assert.equal(result.statusCode,200,result.body);
  detail=json(await call('GET',`/api/issues/${issue.id}/detail`)).data;
  assert.equal(detail.comments.length,0);assert.equal(detail.timeTracking.loggedMinutes,0);assert.equal(detail.attachments.length,0);assert.equal(detail.labels.length,0);
+});
+test('WBS validates hierarchy, project scope, duplicates and optimistic versions',async()=>{
+ const p=await create('projects',{name:'WBS test',startDate:'2026-10-01',endDate:'2026-11-01'});
+ const t=await create('issues',{projectId:p.id,name:'Shared task',startDate:'2026-10-01',endDate:'2026-10-02'});
+ const base='/api/projects/'+p.id+'/tools';
+ const entries=[{id:'d',name:'Deliverable',kind:'Deliverable',parentId:''},{id:'w',name:'Package',kind:'Work package',parentId:'d'},{id:'t',name:'Assignment',kind:'Task',parentId:'w',taskId:t.id}];
+ let r=await call('PUT',base+'/wbs',{version:0,entries});assert.equal(r.statusCode,200,r.body);
+ assert.deepEqual((await call('GET',base)).json().data.wbs.entries,entries);
+ assert.equal((await call('PUT',base+'/wbs',{version:0,entries})).statusCode,409);
+ assert.equal((await call('PUT',base+'/wbs',{version:1,entries:[...entries,{...entries[2],id:'duplicate'}]})).statusCode,400);
+ assert.equal((await call('PUT',base+'/wbs',{version:1,entries:entries.map(e=>e.id==='w'?{...e,parentId:'t'}:e)})).statusCode,400);
+ const p2=await create('projects',{name:'Other WBS',startDate:'2026-10-01',endDate:'2026-11-01'});
+ assert.equal((await call('PUT','/api/projects/'+p2.id+'/tools/wbs',{version:0,entries})).statusCode,400);
+ r=await call('PUT',base+'/wbs',{version:1,entries:[]});assert.equal(r.statusCode,200,r.body);
+ assert.equal((await call('GET','/api/issues/'+t.id)).statusCode,200);
 });

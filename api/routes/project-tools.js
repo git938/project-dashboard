@@ -25,6 +25,22 @@ export async function projectToolRoutes(app){
    const [[old]]=await c.execute('SELECT version FROM project_tools WHERE project_id=? AND section=?',[project.id,section]);
    if((old?.version||0)!==version)throw fail(409,'VERSION_CONFLICT','This section changed in another session. Reload this section before saving.');
    if(new Set(entries.map(e=>e.id)).size!==entries.length)throw fail(400,'INVALID_DATA','Entry IDs must be unique.');
+   if(section==='wbs'){
+    const byId=new Map(entries.map(e=>[e.id,e])),tasks=new Set();
+    for(const e of entries){
+     const parent=byId.get(e.parentId);
+     if(e.kind==='Deliverable'&&(e.parentId||e.taskId))throw fail(400,'INVALID_DATA','Deliverables belong directly to the project.');
+     if(e.kind==='Work package'&&(parent?.kind!=='Deliverable'||e.taskId))throw fail(400,'INVALID_DATA','Work packages require a deliverable.');
+     if(e.kind==='Task'){
+      if(parent?.kind!=='Work package'||!e.taskId||tasks.has(e.taskId))throw fail(400,'INVALID_DATA','Each task must belong to one work package.');
+      const task=await getRecord(c,'issues',e.taskId);
+      if(task.project_id!==project.id)throw fail(400,'INVALID_DATA','Tasks must belong to this project.');
+      const [[link]]=await c.execute("SELECT id FROM issue_links WHERE from_issue_id=? AND kind='parent' AND deleted_at IS NULL LIMIT 1",[e.taskId]);
+      if(link)throw fail(400,'INVALID_DATA','Subtasks inherit their parent task’s work package.');
+      tasks.add(e.taskId);
+     }
+    }
+   }
    const memberIds=new Set();
    for(const entry of entries){
     for(const f of definition.fields){const value=entry[f.key];
