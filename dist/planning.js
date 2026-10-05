@@ -31,8 +31,8 @@
  $('#nav-project-count').textContent=projects.length;$('#nav-issue-count').textContent=issues.length;
  let counts=P.statuses.map(s=>issues.filter(t=>t.status===s).length),palette=['#dadce2','#9ecddf','#e1c775','#b9a2d8','#98b5a4'],offset=0;
  let stops=counts.map((n,i)=>{let start=offset;offset+=n/(issues.length||1)*100;return `${palette[i]} ${start}% ${offset}%`});
- $('#issue-status-donut').style.background=issues.length?`conic-gradient(${stops.join(',')})`:'#e9e9ef';$('#issue-status-total').innerHTML=`${issues.length}<small>Total issues</small>`;
- $('#issue-status-legend').innerHTML=P.statuses.map((s,i)=>`<p><i class="dot ${P.colors[s]}"></i>${s}<b>${DashboardLinks.button(counts[i],s+' tasks','tasks',issues.filter(t=>t.status===s))}</b></p>`).join('');$('#issue-status-count').textContent=issues.length+(issues.length===1?' issue':' issues');
+ $('#issue-status-donut').style.background=issues.length?`conic-gradient(${stops.join(',')})`:'#e9e9ef';$('#issue-status-total').innerHTML=`${issues.length}<small>Total tasks</small>`;
+ $('#issue-status-legend').innerHTML=P.statuses.map((s,i)=>`<p><i class="dot ${P.colors[s]}"></i>${s}<b>${DashboardLinks.button(counts[i],s+' tasks','tasks',issues.filter(t=>t.status===s))}</b></p>`).join('');$('#issue-status-count').textContent=issues.length+(issues.length===1?' task':' tasks');
  }
  const baseRender=render;render=function(){baseRender();syncOverview();if(view!=='overview')draw()};
  const originalCreate=openCreate;openCreate=function(t){if(t==='issue')openTask();else originalCreate(t)};

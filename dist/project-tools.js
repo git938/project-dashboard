@@ -2,7 +2,7 @@
 window.ProjectTools=(()=>{
  let definitionsPromise;
  const definitions=()=>definitionsPromise||(definitionsPromise=fetch('/project-tools-config.json').then(r=>{if(!r.ok)throw Error('Could not load project tools');return r.json()}).catch(e=>{definitionsPromise=null;throw e}));
- const titles={overview:'Overview',teammap:'Team Map',timeline:'Timeline',issues:'Issues',wbs:'WBS',kanban:'Board',gantt:'Gantt',charter:'Charter',plan:'Project Plan',reports:'Status Reports',risks:'Risks',budget:'Budget',resources:'Resources',communication:'Communication',changes:'Change Log',raci:'RACI Matrix'};
+ const titles={overview:'Overview',teammap:'Team Map',timeline:'Timeline',issues:'Tasks',wbs:'WBS',kanban:'Board',gantt:'Gantt',charter:'Project Charter',plan:'Project Plan',reports:'Status Reports',risks:'Risks',budget:'Budget',resources:'Resources',communication:'Communication',changes:'Change Log',raci:'RACI Matrix'};
  async function mount(container,context,initial='charter'){
   const {project,members,tasks,avatar}=context;
   let defs,records,section=initial,filter='',busy=false,initialEdit=context.initialEdit;
