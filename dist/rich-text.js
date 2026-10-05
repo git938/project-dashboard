@@ -53,8 +53,11 @@ window.TicketRichText = (() => {
     function count() { box.querySelector('.rich-count').textContent = (body.textContent.trim().match(/\S+/g) || []).length + ' words'; }
     function sync() { textarea.value = prefix + sanitize(body.innerHTML); textarea.dispatchEvent(new Event('input', { bubbles: true })); count(); remember(); }
     function insert(source) { restore(); document.execCommand('insertHTML', false, sanitize(source)); sync(); }
+    const toolbarIcons={Paragraph:'paragraph',Heading:'heading',Bold:'bold',Italic:'italic',Underline:'underline',Strike:'strikethrough',Bullets:'list-ul','Numbered list':'list-ol',Quote:'quote-left',Code:'code',Link:'link',Undo:'rotate-left',Redo:'rotate-right','Insert table':'table','Add row':'table-list','Add column':'table-columns','Remove table':'table','Insert image':'image'};
     function button(label, action) {
-      const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.setAttribute('aria-label', label);
+      const b = document.createElement('button'); b.type = 'button'; b.title = label; b.setAttribute('aria-label', label);
+      const icon=document.createElement('span');icon.className='fa-solid fa-'+toolbarIcons[label];icon.setAttribute('aria-hidden','true');b.append(icon);
+      if(['Add row','Add column','Remove table'].includes(label)){const badge=document.createElement('span');badge.className='rich-icon-badge';badge.setAttribute('aria-hidden','true');badge.textContent=label==='Remove table'?'−':'+';b.append(badge);}
       b.onmousedown = e => e.preventDefault(); b.onclick = () => { if (!uploading) action(); }; toolbar.append(b); return b;
     }
     for (const [label, command, value] of [['Paragraph','formatBlock','p'],['Heading','formatBlock','h2'],['Bold','bold'],['Italic','italic'],['Underline','underline'],['Strike','strikeThrough'],['Bullets','insertUnorderedList'],['Numbered list','insertOrderedList'],['Quote','formatBlock','blockquote'],['Code','formatBlock','pre'],['Link','createLink'],['Undo','undo'],['Redo','redo']]) {
