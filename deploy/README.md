@@ -87,13 +87,18 @@ sudo chown -R project-dashboard:project-dashboard /opt/project-dashboard
 find /opt/project-dashboard ! -user project-dashboard | wc -l   # must print 0
 ```
 
-The service user also needs its own git access (SSH config and deploy key) and a
-writable backup root:
+The service user also needs its own git access (SSH config and deploy key), a
+writable backup root, and a state directory:
 
 ```bash
 sudo install -d -o project-dashboard -g project-dashboard -m 750 /var/backups/project-dashboard
+sudo install -d -o project-dashboard -g project-dashboard -m 755 /var/lib/project-dashboard
 sudo -u project-dashboard ssh -T git@github-project-dashboard   # must authenticate
 ```
+
+`/var/lib/project-dashboard` holds `deployed-sha`, which records the commit the
+app is actually running. The restart step writes it as root but hands it back to
+the owner of that directory, so no root-owned file lands in a service-user tree.
 
 ## Deploy
 
@@ -119,8 +124,34 @@ or point a webhook at `systemctl start project-dashboard-deploy`.
 | `DEPLOY_STOP_FOR_BACKUP` | `0` | `1` stops the app first, for a frozen backup instead of `--single-transaction` |
 | `DEPLOY_EXPECTED_COMMIT` | unset | if set, the remote must contain this sha |
 | `DEPLOY_DISCARD_DRIFT` | `0` | `1` throws away local changes in the target instead of stopping |
+| `DEPLOY_STATE_DIR` | `/var/lib/project-dashboard` | where `deployed-sha` is recorded |
 | `DEPLOY_INSTALL_DEPS` | `1` | run `npm ci` |
 | `DEPLOY_MIGRATE` | `1` | run `npm run db:migrate` |
+| `DEPLOY_SKIP_RESTART` | `0` | `1` records activation and verifies readiness without restarting |
+
+## Interrupted deploys
+
+The checkout and the running process are two different things, so the pipeline
+tracks both.
+
+`deploy-project-dashboard.sh` compares the commit in the working tree with
+`deployed-sha`. If they differ it asks for a restart **even when the files are
+already up to date**. That closes a silent failure: a deploy killed after the
+fast-forward but before the restart used to leave the files updated, the old code
+still serving, and every later run reporting "nothing to do" -- so the change
+never took effect. Now the next run finishes the job.
+
+The two interruption windows and what to do:
+
+| Killed during | State left behind | Recovery |
+| --- | --- | --- |
+| Backup, before any change | nothing changed | just re-run |
+| After the fast-forward | files updated, not activated | just re-run; it requests the restart |
+| **Inside the fast-forward** | working tree partially checked out (dirty), possibly `.git/index.lock` | fail-closed: the run stops and says so. Verify nothing else is running, remove the lock, then `sudo -u project-dashboard git -C /opt/project-dashboard reset --hard origin/main` and re-run |
+
+A second run never starts while the first is still going: the unit is
+`Type=oneshot`, so systemd merges the start job instead of forking a second
+process. Do not invoke the sync script by hand in parallel with the unit.
 
 ## Verify a deploy
 
@@ -142,12 +173,22 @@ ownership and re-run:
 sudo chown -R project-dashboard:project-dashboard /opt/project-dashboard/.git
 ```
 
-**`STOP: the deployment target has local changes.`** — something wrote to the
-target. Find out what before overriding:
+**`STOP: the deployment target has local changes.`** — either something wrote to
+the target, or a previous deploy was killed inside the fast-forward. Find out
+which before overriding:
 
 ```bash
 sudo -u project-dashboard git -C /opt/project-dashboard status --short
+sudo -u project-dashboard git -C /opt/project-dashboard log --oneline -1
 ```
+
+If `HEAD` already equals the commit you expected and the tree is only partially
+updated, that is git's own interrupted checkout: `reset --hard origin/main`
+finishes it. If foreign edits are there instead, investigate first.
+
+**`... .git/index.lock exists`** — a git operation was interrupted, or another
+deploy is still running. The run stops before changing anything. Confirm nothing
+is running, remove the file, re-run.
 
 **`history diverged`** — the target has commits that GitHub does not. Do not
 force it; decide deliberately whether that work matters.

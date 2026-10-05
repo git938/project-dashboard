@@ -39,6 +39,8 @@ INSTALL_DEPS="${DEPLOY_INSTALL_DEPS:-1}"
 MIGRATE="${DEPLOY_MIGRATE:-1}"
 DISCARD_DRIFT="${DEPLOY_DISCARD_DRIFT:-0}"
 MARKER_DIR="${RUNTIME_DIRECTORY:-/run/project-dashboard-deploy}"
+STATE_DIR="${DEPLOY_STATE_DIR:-/var/lib/project-dashboard}"
+STATE_FILE="$STATE_DIR/deployed-sha"
 
 log() { printf '[deploy] %s\n' "$*"; }
 die() { printf '[deploy] ERROR: %s\n' "$*" >&2; exit 1; }
@@ -55,6 +57,12 @@ fi
 [ -O "$TARGET" ] || die "$TARGET is not owned by $(id -un); refusing to touch it. Fix ownership first."
 [ -O "$TARGET/.git" ] || die "$TARGET/.git is not owned by $(id -un); refusing to fetch into it -- ref updates would fail part-way. Fix ownership first."
 [ -f "$TARGET/.env" ] || die "$TARGET/.env is missing"
+
+# A leftover index.lock means someone was killed mid-operation. Say so plainly
+# instead of letting the next git command emit "File exists".
+if [ -e "$TARGET/.git/index.lock" ]; then
+  die "$TARGET/.git/index.lock exists: a previous git operation was interrupted, or another deploy is still running. Confirm nothing is running, then remove that file and re-run. Nothing has been changed yet."
+fi
 
 cd "$TARGET"
 
@@ -92,9 +100,29 @@ if [ -n "$(git status --porcelain)" ]; then
   fi
 fi
 
-# --- nothing to do? -------------------------------------------------------
+# --- does the running app still need to be moved onto this commit? --------
+# The checkout and the running process are two different things. A deploy that
+# was killed after the fast-forward but before the restart leaves the files
+# updated while the old code keeps serving, and a naive "already at $want" check
+# would then never restart it. Recording the activated commit makes the next run
+# heal that instead of silently doing nothing.
+activated="$(cat "$STATE_FILE" 2>/dev/null || true)"
+
+request_activation() {
+  mkdir -p "$MARKER_DIR"
+  printf '%s\n' "$want" > "$MARKER_DIR/activate"
+  : > "$MARKER_DIR/changed"
+  log "activation requested: $want (app is on ${activated:-an unrecorded commit})"
+}
+
 if [ "$before" = "$want" ]; then
-  log "already at $want; nothing to do"
+  log "checkout already at $want"
+  if [ "$want" != "$activated" ]; then
+    log "the app has not been restarted onto it yet"
+    request_activation
+  else
+    log "app is already running $want; nothing to do"
+  fi
   exit 0
 fi
 
@@ -181,7 +209,10 @@ if [ "$MIGRATE" = "1" ]; then
 fi
 
 # --- hand off to the privileged restart ----------------------------------
+# Record the commit the restart step should mark as activated once the app is
+# confirmed healthy.
 mkdir -p "$MARKER_DIR"
+printf '%s\n' "$want" > "$MARKER_DIR/activate"
 : > "$MARKER_DIR/changed"
 log "checkout moved: $before -> $want"
 log "backup: $backup"
