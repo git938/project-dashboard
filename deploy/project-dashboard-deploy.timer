@@ -1,0 +1,17 @@
+[Unit]
+Description=Poll GitHub for project-dashboard changes and deploy them
+Documentation=file:///opt/project-dashboard/deploy/README.md
+
+[Timer]
+# OPT-IN. The primary way to deploy is an explicit trigger, e.g. from CI or a
+# webhook:
+#     sudo systemctl start project-dashboard-deploy
+# Enable this timer only if you also want unattended polling. A poll that finds
+# nothing new costs one fetch and no restart.
+OnCalendar=*:0/5
+AccuracySec=30s
+Persistent=false
+Unit=project-dashboard-deploy.service
+
+[Install]
+WantedBy=timers.target
